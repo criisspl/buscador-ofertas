@@ -1,5 +1,4 @@
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
+import { ipDe, limitador } from "@/lib/limite";
 import { llamarProveedores, type Proveedor } from "@/lib/ia/servidor";
 import { MAX_BYTES, valida, type Entrada } from "@/lib/ia/valida";
 
@@ -16,17 +15,6 @@ const MENSAJES = {
   caida: { error: "caida", mensaje: "La IA no responde ahora mismo. Prueba en un rato." },
 } as const;
 const STATUS = { config: 503, cupo: 429, caida: 502 } as const;
-
-/** Límite por persona. Sin Upstash configurado, solo se permite en desarrollo. */
-function limitador(): Ratelimit | null {
-  const { UPSTASH_REDIS_REST_URL: url, UPSTASH_REDIS_REST_TOKEN: token } = process.env;
-  if (!url || !token) return null;
-  return new Ratelimit({
-    redis: new Redis({ url, token }),
-    limiter: Ratelimit.slidingWindow(8, "1 m"),
-    prefix: "ia",
-  });
-}
 
 function proveedores(): Proveedor[] {
   const { GROQ_API_KEY, GROQ_MODEL, MISTRAL_API_KEY, MISTRAL_MODEL } = process.env;
@@ -54,10 +42,9 @@ export async function POST(request: Request) {
   if (origen && new URL(origen).host !== new URL(request.url).host)
     return json({ error: "origen" }, 403);
 
-  const limite = limitador();
+  const limite = limitador("ia", 8);
   if (limite) {
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "anon";
-    const { success } = await limite.limit(ip);
+    const { success } = await limite.limit(ipDe(request));
     if (!success)
       return json(
         { error: "limite", mensaje: "Vas muy rápido: espera un minuto y vuelve a intentarlo." },
