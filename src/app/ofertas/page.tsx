@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { guardar } from "@/lib/candidaturas";
 import { pasaFiltro, puntuar } from "@/lib/encaje";
 import { db } from "@/lib/store";
 import type { Encaje, Oferta, Perfil, Preferencias } from "@/lib/tipos";
@@ -16,8 +17,13 @@ export default function PaginaOfertas() {
   const [prefs, setPrefs] = useState<Preferencias | null>(null);
   const [encajes, setEncajes] = useState<Record<string, Encaje>>({});
   const [puntuando, setPuntuando] = useState(false);
+  const [guardadas, setGuardadas] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    db.candidaturas
+      .toCollection()
+      .primaryKeys()
+      .then((k) => setGuardadas(new Set(k)));
     db.perfil.get("perfil").then((p) => p && setPerfil(p));
     db.encajes.toArray().then((l) => setEncajes(Object.fromEntries(l.map((e) => [e.ofertaId, e]))));
     db.preferencias.get("preferencias").then((p) => {
@@ -142,6 +148,16 @@ export default function PaginaOfertas() {
               </div>
             )}
             <p className="line-clamp-3 text-sm">{o.descripcion}</p>
+            <button
+              className="boton-sec"
+              disabled={guardadas.has(o.id)}
+              onClick={async () => {
+                await guardar(db, o.id);
+                setGuardadas((g) => new Set(g).add(o.id));
+              }}
+            >
+              {guardadas.has(o.id) ? "Guardada" : "Guardar"}
+            </button>
           </li>
         ))}
       </ul>
