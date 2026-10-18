@@ -17,6 +17,11 @@ export default function PaginaOfertas() {
   const [prefs, setPrefs] = useState<Preferencias | null>(null);
   const [encajes, setEncajes] = useState<Record<string, Encaje>>({});
   const [puntuando, setPuntuando] = useState(false);
+  const [enlace, setEnlace] = useState("");
+  const [importando, setImportando] = useState(false);
+  const [avisoImporta, setAvisoImporta] = useState("");
+  const [manual, setManual] = useState(false);
+  const [mano, setMano] = useState({ titulo: "", empresa: "", url: "", descripcion: "" });
   const [guardadas, setGuardadas] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -53,6 +58,57 @@ export default function PaginaOfertas() {
     } finally {
       setCargando(false);
     }
+  };
+
+  const añade = async (o: Oferta) => {
+    await db.ofertas.put(o);
+    setOfertas((l) => [o, ...l.filter((x) => x.id !== o.id)]);
+  };
+
+  const importa = async () => {
+    setImportando(true);
+    setAvisoImporta("");
+    try {
+      const r = await fetch("/api/importar", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: enlace.trim() }),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        setManual(true);
+        throw new Error(d.mensaje ?? "No se ha podido importar.");
+      }
+      await añade(d.oferta);
+      setEnlace("");
+      setAvisoImporta(`Añadida: ${d.oferta.titulo}`);
+    } catch (e) {
+      setAvisoImporta(e instanceof Error ? e.message : "No se ha podido importar.");
+    } finally {
+      setImportando(false);
+    }
+  };
+
+  const guardaMano = async () => {
+    const url = mano.url.trim();
+    if (url && !/^https?:\/\//i.test(url)) {
+      setAvisoImporta("El enlace tiene que empezar por http o https.");
+      return;
+    }
+    const id = `mano:${crypto.randomUUID()}`;
+    await añade({
+      id,
+      fuente: "manual",
+      idExterno: id,
+      titulo: mano.titulo.trim(),
+      empresa: mano.empresa.trim(),
+      ubicacion: "",
+      url,
+      descripcion: mano.descripcion.trim().slice(0, 1500),
+    });
+    setMano({ titulo: "", empresa: "", url: "", descripcion: "" });
+    setManual(false);
+    setAvisoImporta("Oferta añadida.");
   };
 
   // Una a una: la IA de la app tiene un límite por minuto y así un fallo no pierde lo ya puntuado.
@@ -108,6 +164,59 @@ export default function PaginaOfertas() {
         {aviso && <p className="bg-warn-soft text-warn rounded-lg p-3">{aviso}</p>}
       </section>
 
+      <section className="card space-y-3">
+        <h2 className="font-bold">Añadir una oferta</h2>
+        <label className="block">
+          Enlace de la oferta
+          <input
+            className="campo"
+            type="url"
+            value={enlace}
+            onChange={(e) => setEnlace(e.target.value)}
+            placeholder="https://…"
+          />
+        </label>
+        <div className="flex gap-3">
+          <button className="boton" disabled={importando || !enlace.trim()} onClick={importa}>
+            {importando ? "Importando…" : "Importar"}
+          </button>
+          <button className="boton-sec" onClick={() => setManual((m) => !m)}>
+            Añadir a mano
+          </button>
+        </div>
+        {avisoImporta && <p className="bg-warn-soft text-warn rounded-lg p-3">{avisoImporta}</p>}
+        {manual && (
+          <div className="space-y-3">
+            {(["titulo", "empresa", "url"] as const).map((k) => (
+              <label key={k} className="block">
+                {k === "titulo" ? "Puesto" : k === "empresa" ? "Empresa" : "Enlace (opcional)"}
+                <input
+                  className="campo"
+                  value={mano[k]}
+                  onChange={(e) => setMano({ ...mano, [k]: e.target.value })}
+                />
+              </label>
+            ))}
+            <label className="block">
+              Descripción
+              <textarea
+                className="campo"
+                rows={5}
+                value={mano.descripcion}
+                onChange={(e) => setMano({ ...mano, descripcion: e.target.value })}
+              />
+            </label>
+            <button
+              className="boton"
+              disabled={!mano.titulo.trim() || mano.descripcion.trim().length < 30}
+              onClick={guardaMano}
+            >
+              Guardar oferta
+            </button>
+          </div>
+        )}
+      </section>
+
       {visibles.length > 0 && (
         <div className="flex items-center gap-3">
           <button
@@ -124,14 +233,18 @@ export default function PaginaOfertas() {
       <ul className="space-y-3">
         {visibles.map((o) => (
           <li key={o.id} className="card space-y-1">
-            <a
-              href={o.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-accent font-bold"
-            >
-              {o.titulo}
-            </a>
+            {o.url ? (
+              <a
+                href={o.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent font-bold"
+              >
+                {o.titulo}
+              </a>
+            ) : (
+              <b>{o.titulo}</b>
+            )}
             <p className="text-muted">
               {o.empresa} · {o.ubicacion}
               {o.salario ? ` · ${o.salario}` : ""} <span className="chip">{o.fuente}</span>

@@ -6,7 +6,7 @@ Sube tu CV, cuéntale qué buscas y la IA puntúa las ofertas de trabajo según 
 
 1. **Ajustes**: eliges la IA. O la de la app (Groq, con Mistral de reserva) o tu propia clave de cualquier API compatible con OpenAI.
 2. **Perfil**: subes tu CV en PDF. El texto se extrae en el navegador, y solo se envía a la IA después de que aceptes. Revisas y corriges el perfil resultante y fijas tus preferencias (puestos, ubicación, remoto, sectores a evitar).
-3. **Ofertas**: busca en Remotive, Adzuna y Jooble, quita duplicados y puntúa cada oferta de 0 a 100 diciendo qué cumples y qué te falta.
+3. **Ofertas**: busca en Remotive, Adzuna y Jooble (o importa una oferta por enlace, o añádela a mano), quita duplicados y puntúa cada oferta de 0 a 100 diciendo qué cumples y qué te falta.
 4. **Candidaturas**: guarda ofertas, sigue su estado, anota y genera una carta de presentación que luego editas.
 5. **Copia**: copia cifrada en la nube con alias y contraseña, para recuperar tus datos si borras el navegador.
 
@@ -25,6 +25,7 @@ flowchart LR
 - Con clave propia, la clave se guarda solo en tu navegador y las llamadas van directas a tu proveedor sin pasar por el servidor.
 - La copia en la nube se cifra **en el navegador**: PBKDF2 (600 000 iteraciones) de tu contraseña, HKDF para sacar dos claves independientes (una para AES-GCM y otra para demostrar que eres el dueño de la copia), y el servidor solo guarda el blob cifrado y el hash del token. Tu clave de IA no entra en la copia.
 - **Sin la contraseña no hay recuperación.** Nadie puede restablecerla, y es lo que hace que el servidor no pueda leer nada.
+- Importar por enlace obliga al servidor a descargar páginas ajenas, así que se defiende de SSRF: solo http/https en los puertos 80 y 443, sin credenciales en la URL, la IP **real** a la que conecta (no solo el nombre) tiene que ser pública, cada redirección (máx. 3) se revalida, y hay límite de 8 s y 1 MB y solo se acepta HTML. No se guarda nada: la página se descarga, se extrae la oferta y se devuelve al navegador.
 - CSP sin recursos de terceros: ni scripts, ni fuentes, ni analítica.
 
 ## Decisiones
@@ -85,7 +86,6 @@ Se prueba con respuestas simuladas, no contra los servicios reales:
 
 ## Pendiente
 
-- Importar una oferta por enlace (exige que el servidor descargue URLs ajenas y, por tanto, defenderse de SSRF).
 - Recordatorio de exportar y petición de almacenamiento persistente.
 
 ## Licencia
