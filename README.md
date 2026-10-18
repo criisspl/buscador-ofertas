@@ -57,6 +57,8 @@ Variables (todas están en `.env.example`):
 - `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`: límite por persona y copia en la nube. Obligatorias en producción; sin ellas la IA de la app y la copia responden 503.
 - `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, `ADZUNA_PAIS`, `JOOBLE_API_KEY`: fuentes de ofertas opcionales. Remotive no necesita clave y solo busca ofertas remotas.
 
+**Modo demo**: el botón «Probar con datos de ejemplo» de la portada carga un perfil y unas ofertas inventadas y pone la IA en modo demo, que responde con textos de ejemplo sin red. Sirve para enseñar la app sin CV ni claves.
+
 Sin ninguna clave de servidor puedes usar la app igualmente con tu propia clave de IA y Remotive.
 
 ## Calidad
@@ -83,7 +85,6 @@ Se prueba con respuestas simuladas, no contra los servicios reales:
 ## Pendiente
 
 - Importar una oferta por enlace (exige que el servidor descargue URLs ajenas y, por tanto, defenderse de SSRF).
-- Modo demo con CV de ejemplo y respuestas de IA enlatadas.
 - Pruebas E2E con Playwright en CI.
 - Recordatorio de exportar y petición de almacenamiento persistente.
 

@@ -53,6 +53,17 @@ export default function PaginaAjustes() {
         </span>
       </label>
 
+      <label className="flex gap-2">
+        <input
+          type="radio"
+          checked={aj.modoIa === "demo"}
+          onChange={() => cambia({ modoIa: "demo" })}
+        />
+        <span>
+          <b>Demo</b>: respuestas de ejemplo, sin IA real ni red. Para ver cómo funciona la app.
+        </span>
+      </label>
+
       {aj.modoIa === "propia" && (
         <div className="space-y-3">
           <label className="block">

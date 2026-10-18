@@ -100,5 +100,5 @@ export async function cartaPara(
 ): Promise<string> {
   const datos = { skills: perfil.skills, experiencia: perfil.experiencia, idiomas: perfil.idiomas };
   const texto = `PERFIL:\n${JSON.stringify(datos)}\n\nOFERTA:\n"""\n${oferta.titulo} en ${oferta.empresa}\n${oferta.descripcion}\n"""`;
-  return (await pregunta(ajustes, { sistema: SISTEMA_CARTA, texto })).trim();
+  return (await pregunta(ajustes, { sistema: SISTEMA_CARTA, texto, tarea: "carta" })).trim();
 }

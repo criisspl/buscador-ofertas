@@ -4,8 +4,8 @@ export type EstadoCandidatura = "guardada" | "enviada" | "entrevista" | "oferta"
 
 export interface Ajustes {
   id: "ajustes";
-  /** "app" usa la IA de la app; "propia" usa la clave del usuario. */
-  modoIa: "app" | "propia";
+  /** "app" usa la IA de la app; "propia" usa la clave del usuario; "demo" responde con textos de ejemplo, sin red. */
+  modoIa: "app" | "propia" | "demo";
   url?: string;
   modelo?: string;
   clave?: string;

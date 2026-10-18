@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AvisoDemo } from "./_componentes/AvisoDemo";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </Link>
           </nav>
         </header>
+        <AvisoDemo />
         <main className="mx-auto max-w-3xl px-4 py-8">{children}</main>
       </body>
     </html>

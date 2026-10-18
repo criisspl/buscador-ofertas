@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BotonDemo } from "./_componentes/BotonDemo";
 
 export default function Home() {
   return (
@@ -8,13 +9,14 @@ export default function Home() {
         Sube tu CV, cuéntanos qué buscas y la IA ordena las ofertas por encaje. Todo se guarda solo
         en tu navegador: sin cuentas.
       </p>
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <Link href="/ajustes" className="boton-sec">
           1. Elige tu IA
         </Link>
         <Link href="/perfil" className="boton">
           2. Sube tu CV
         </Link>
+        <BotonDemo />
       </div>
     </div>
   );
