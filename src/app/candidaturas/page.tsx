@@ -102,7 +102,7 @@ export default function PaginaCandidaturas() {
       {filas.map(({ c, o }) => (
         <section key={c.ofertaId} className="card space-y-3">
           <div>
-            {o ? (
+            {o?.url ? (
               <a
                 href={o.url}
                 target="_blank"
@@ -111,6 +111,8 @@ export default function PaginaCandidaturas() {
               >
                 {o.titulo}
               </a>
+            ) : o ? (
+              <b>{o.titulo}</b>
             ) : (
               <b>{c.ofertaId}</b>
             )}
