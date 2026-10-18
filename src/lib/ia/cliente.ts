@@ -1,4 +1,5 @@
 import type { Ajustes } from "../tipos.ts";
+import { respuestaDemo } from "./demo.ts";
 import type { Mensaje } from "./valida.ts";
 
 export interface Pregunta {
@@ -6,6 +7,8 @@ export interface Pregunta {
   texto: string;
   /** Pide la respuesta como un objeto JSON. */
   json?: boolean;
+  /** Qué se está pidiendo; el modo demo lo usa para elegir su respuesta de ejemplo. */
+  tarea?: "perfil" | "encaje" | "carta";
   signal?: AbortSignal;
 }
 
@@ -53,6 +56,7 @@ async function enviar(
 
 /** Pregunta a la IA de la app (por /api/ia) o a la del usuario, según sus ajustes. */
 export async function preguntar(ajustes: Ajustes, p: Pregunta): Promise<string> {
+  if (ajustes.modoIa === "demo") return respuestaDemo(p);
   const messages: Mensaje[] = [
     ...(p.sistema ? [{ role: "system" as const, content: p.sistema }] : []),
     { role: "user", content: p.texto },

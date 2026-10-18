@@ -45,7 +45,12 @@ export async function puntuar(
   const texto = `PERFIL:\n${JSON.stringify(datosPerfil)}\n\nOFERTA:\n"""\n${oferta.titulo} en ${oferta.empresa} (${oferta.ubicacion})\n${oferta.descripcion}\n"""`;
   let ultimoFallo = "";
   for (let intento = 0; intento < 2; intento++) {
-    const respuesta = await pregunta(ajustes, { sistema: SISTEMA, texto, json: true });
+    const respuesta = await pregunta(ajustes, {
+      sistema: SISTEMA,
+      texto,
+      json: true,
+      tarea: "encaje",
+    });
     try {
       const d = EncajeIaSchema.parse(extraerJson(respuesta));
       return {

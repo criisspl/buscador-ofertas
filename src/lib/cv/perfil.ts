@@ -49,6 +49,7 @@ export async function perfilDesdeCv(
       sistema: SISTEMA,
       texto: `CV:\n"""\n${cv}\n"""`,
       json: true,
+      tarea: "perfil",
     });
     try {
       const datos = PerfilIaSchema.parse(extraerJson(respuesta));
