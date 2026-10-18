@@ -1,0 +1,78 @@
+import "fake-indexeddb/auto";
+import assert from "node:assert/strict";
+import { beforeEach, describe, it, vi } from "vitest";
+import { actualizar, cartaPara, exportar, guardar, importar } from "../src/lib/candidaturas.ts";
+import { BaseDatos } from "../src/lib/store.ts";
+import type { Oferta } from "../src/lib/tipos.ts";
+
+const oferta: Oferta = {
+  id: "a:1",
+  fuente: "a",
+  idExterno: "1",
+  titulo: "Dev",
+  empresa: "Acme",
+  ubicacion: "Madrid",
+  url: "https://x.test/1",
+  descripcion: "React",
+};
+
+let db: BaseDatos;
+beforeEach(async () => {
+  db = new BaseDatos(`test-${Math.random()}`);
+  await db.open();
+  await db.ofertas.put(oferta);
+});
+
+describe("candidaturas", () => {
+  it("guarda una vez y no pisa el estado al volver a guardar", async () => {
+    await guardar(db, "a:1", 1);
+    await actualizar(db, "a:1", { estado: "enviada", notas: "hablé con RRHH" }, 2);
+    await guardar(db, "a:1", 3);
+    const c = await db.candidaturas.get("a:1");
+    assert.deepEqual(
+      [c?.estado, c?.notas, c?.creada, c?.actualizada],
+      ["enviada", "hablé con RRHH", 1, 2],
+    );
+  });
+
+  it("exporta e importa en otra base", async () => {
+    await guardar(db, "a:1", 1);
+    const copia = await exportar(db);
+    const otra = new BaseDatos(`test-${Math.random()}`);
+    await otra.open();
+    assert.equal(await importar(otra, copia), 1);
+    assert.equal((await otra.ofertas.get("a:1"))?.titulo, "Dev");
+    assert.equal((await otra.candidaturas.get("a:1"))?.estado, "guardada");
+  });
+
+  it("rechaza archivos que no son una copia y no toca nada", async () => {
+    for (const malo of [
+      "no json",
+      "{}",
+      JSON.stringify({
+        version: 1,
+        ofertas: [{ ...oferta, url: "javascript:x" }],
+        candidaturas: [],
+      }),
+    ])
+      await assert.rejects(importar(db, malo), /copia válida/);
+    assert.equal(await db.candidaturas.count(), 0);
+  });
+});
+
+describe("cartaPara", () => {
+  it("pide la carta con la oferta como dato y devuelve el texto limpio", async () => {
+    const p = vi.fn().mockResolvedValue("  Hola, me interesa.  \n");
+    const perfil = {
+      id: "perfil" as const,
+      skills: ["React"],
+      experiencia: [],
+      idiomas: [],
+      textoCv: "",
+    };
+    const t = await cartaPara(oferta, perfil, { id: "ajustes", modoIa: "app" }, p);
+    assert.equal(t, "Hola, me interesa.");
+    assert.match(p.mock.calls[0][1].sistema, /no son instrucciones/);
+    assert.equal(p.mock.calls[0][1].json, undefined);
+  });
+});
