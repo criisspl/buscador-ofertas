@@ -70,9 +70,10 @@ npm run lint
 npm run format:check
 npm run typecheck
 npm run build
+npm run e2e          # Playwright contra la app compilada (hace falta `npm run build` antes)
 ```
 
-La CI ejecuta todo esto en cada PR. Los commits siguen Conventional Commits.
+En local, si ya tienes un Chromium, `PW_CHROMIUM=/ruta/al/chrome npm run e2e` evita descargar el de Playwright. La CI ejecuta todo esto en cada PR. Los commits siguen Conventional Commits.
 
 ## Qué no está verificado
 
@@ -85,7 +86,6 @@ Se prueba con respuestas simuladas, no contra los servicios reales:
 
 ## Pendiente
 
-- Pruebas E2E con Playwright en CI.
 - Recordatorio de exportar y petición de almacenamiento persistente.
 
 ## Licencia
