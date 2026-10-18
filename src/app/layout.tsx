@@ -20,6 +20,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/perfil" className="text-muted hover:text-ink">
               Perfil
             </Link>
+            <Link href="/ofertas" className="text-muted hover:text-ink">
+              Ofertas
+            </Link>
             <Link href="/ajustes" className="text-muted hover:text-ink">
               Ajustes
             </Link>
