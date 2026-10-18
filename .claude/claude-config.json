@@ -1,0 +1,21 @@
+{
+  "version": "1.0.1",
+  "paquetes": [
+    "indexeddb",
+    "nextjs",
+    "react",
+    "tailwind",
+    "typescript",
+    "vitest",
+    "zod"
+  ],
+  "ficheros": {
+    ".claude/skills/indexeddb/SKILL.md": "590017935dae303df27c89160a2a2a0616d9e8a2cfb8ef29dda3c33dad48d3f4",
+    ".claude/skills/nextjs/SKILL.md": "71beb960ada434b2a8fcbddf561088651d33e9f53b679ba3745f5421bf31ce30",
+    ".claude/skills/react/SKILL.md": "088de4d78faf3ecd505a3df870b72b896a547db30b82faf62a90ff0d32e53624",
+    ".claude/skills/tailwind/SKILL.md": "0eefda3a75cac31ac5e135ceacf3770254fb189f7e1407a99804c1aae847e9ad",
+    ".claude/skills/typescript/SKILL.md": "a5515e604e2ec00b02722d48187e4a075f335947bfdc4df9f5585be2e649ca6b",
+    ".claude/skills/vitest/SKILL.md": "bf72cc2ec0d482b09485f411e44c940cd7752c01380a0cfe823e09c0144d51d3",
+    ".claude/skills/zod/SKILL.md": "f6dbcf33f97629f9fa473199669574556b43681305f26dd56bd291fc8f5fabd0"
+  }
+}
