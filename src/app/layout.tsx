@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AvisoCopia } from "./_componentes/AvisoCopia";
 import { AvisoDemo } from "./_componentes/AvisoDemo";
 import "./globals.css";
 
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </nav>
         </header>
         <AvisoDemo />
+        <AvisoCopia />
         <main className="mx-auto max-w-3xl px-4 py-8">{children}</main>
       </body>
     </html>

@@ -8,7 +8,7 @@ Sube tu CV, cuéntale qué buscas y la IA puntúa las ofertas de trabajo según 
 2. **Perfil**: subes tu CV en PDF. El texto se extrae en el navegador, y solo se envía a la IA después de que aceptes. Revisas y corriges el perfil resultante y fijas tus preferencias (puestos, ubicación, remoto, sectores a evitar).
 3. **Ofertas**: busca en Remotive, Adzuna y Jooble (o importa una oferta por enlace, o añádela a mano), quita duplicados y puntúa cada oferta de 0 a 100 diciendo qué cumples y qué te falta.
 4. **Candidaturas**: guarda ofertas, sigue su estado, anota y genera una carta de presentación que luego editas.
-5. **Copia**: copia cifrada en la nube con alias y contraseña, para recuperar tus datos si borras el navegador.
+5. **Copia**: copia cifrada en la nube con alias y contraseña, para recuperar tus datos si borras el navegador. Si hay datos y pasan 14 días sin copia, un aviso lo recuerda (se puede posponer 7 días). Cuando hay datos, la app también pide al navegador almacenamiento persistente para que no los borre por falta de espacio.
 
 ## Privacidad: cómo está resuelta
 
@@ -86,7 +86,7 @@ Se prueba con respuestas simuladas, no contra los servicios reales:
 
 ## Pendiente
 
-- Recordatorio de exportar y petición de almacenamiento persistente.
+- Probar con claves reales y desplegar en Vercel.
 
 ## Licencia
 
