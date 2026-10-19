@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { bajar, borrarCopia, subir } from "@/lib/nube/cliente";
+import { marcarCopia } from "@/lib/recordatorio";
 import { db } from "@/lib/store";
 
 const MIN_PASSWORD = 10;
@@ -63,7 +64,11 @@ export default function PaginaCopia() {
             className="boton"
             disabled={trabajando || !listo || password.length < MIN_PASSWORD}
             onClick={() =>
-              ejecuta(async () => `Copia guardada (${hora(await subir(db, alias, password))}).`)
+              ejecuta(async () => {
+                const cuando = await subir(db, alias, password);
+                marcarCopia(localStorage);
+                return `Copia guardada (${hora(cuando)}).`;
+              })
             }
           >
             Guardar copia
