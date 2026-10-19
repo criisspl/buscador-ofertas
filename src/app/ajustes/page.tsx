@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { probarConexion, type ResultadoPrueba } from "@/lib/ia/prueba";
 import { db } from "@/lib/store";
 import type { Ajustes } from "@/lib/tipos";
 
@@ -9,6 +10,8 @@ const VACIOS: Ajustes = { id: "ajustes", modoIa: "app" };
 export default function PaginaAjustes() {
   const [aj, setAj] = useState<Ajustes>(VACIOS);
   const [guardado, setGuardado] = useState(false);
+  const [probando, setProbando] = useState(false);
+  const [prueba, setPrueba] = useState<ResultadoPrueba | null>(null);
 
   useEffect(() => {
     db.ajustes.get("ajustes").then((a) => a && setAj(a));
@@ -17,11 +20,24 @@ export default function PaginaAjustes() {
   const cambia = (parcial: Partial<Ajustes>) => {
     setAj({ ...aj, ...parcial });
     setGuardado(false);
+    setPrueba(null);
   };
 
   const guarda = async () => {
     await db.ajustes.put(aj);
     setGuardado(true);
+  };
+
+  const pruebaAhora = async () => {
+    setProbando(true);
+    setPrueba(null);
+    try {
+      setPrueba(await probarConexion(aj));
+    } catch {
+      setPrueba({ ok: false, mensaje: "No se ha podido hacer la prueba." });
+    } finally {
+      setProbando(false);
+    }
   };
 
   return (
@@ -100,8 +116,18 @@ export default function PaginaAjustes() {
         <button className="boton" onClick={guarda}>
           Guardar
         </button>
+        <button className="boton-sec" disabled={probando} onClick={pruebaAhora}>
+          {probando ? "Probando…" : "Probar conexión"}
+        </button>
         {guardado && <span className="text-ok">Guardado</span>}
       </div>
+      {prueba && (
+        <p
+          className={`rounded-lg p-3 ${prueba.ok ? "bg-accent-soft text-ok" : "bg-warn-soft text-warn"}`}
+        >
+          {prueba.mensaje}
+        </p>
+      )}
     </div>
   );
 }
