@@ -11,6 +11,43 @@ export const ESTADOS: { id: EstadoCandidatura; etiqueta: string }[] = [
   { id: "descartada", etiqueta: "Descartada" },
 ];
 
+export interface Fila {
+  c: Candidatura;
+  o?: Oferta;
+}
+
+export type Filtro = "activas" | "todas" | EstadoCandidatura;
+
+/** Estados de una candidatura que sigue en marcha. */
+const ACTIVAS: EstadoCandidatura[] = ["guardada", "enviada", "entrevista", "oferta"];
+
+const enFiltro = (f: Fila, filtro: Filtro) =>
+  filtro === "todas" ||
+  (filtro === "activas" ? ACTIVAS.includes(f.c.estado) : f.c.estado === filtro);
+
+/** Cuántas filas hay por filtro, para los contadores. */
+export function contar(filas: Fila[]): Record<Filtro, number> {
+  const cuenta = Object.fromEntries(
+    [...ESTADOS.map((e) => e.id), "activas", "todas"].map((k) => [k, 0]),
+  ) as Record<Filtro, number>;
+  for (const f of filas) {
+    cuenta[f.c.estado]++;
+    cuenta.todas++;
+    if (ACTIVAS.includes(f.c.estado)) cuenta.activas++;
+  }
+  return cuenta;
+}
+
+/** Filas del filtro cuyo puesto o empresa contiene la búsqueda (sin mayúsculas ni tildes). */
+export function filtrar(filas: Fila[], filtro: Filtro, busqueda: string): Fila[] {
+  const norm = (t: string) => t.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+  const q = norm(busqueda.trim());
+  return filas.filter(
+    (f) =>
+      enFiltro(f, filtro) && (!q || norm(`${f.o?.titulo ?? ""} ${f.o?.empresa ?? ""}`).includes(q)),
+  );
+}
+
 /** Guarda una oferta para seguirla. Si ya estaba, no pisa su estado ni sus notas. */
 export async function guardar(db: BaseDatos, ofertaId: string, ahora = Date.now()) {
   if (await db.candidaturas.get(ofertaId)) return;

@@ -1,14 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { actualizar, cartaPara, ESTADOS, exportar, importar } from "@/lib/candidaturas";
+import {
+  actualizar,
+  cartaPara,
+  contar,
+  ESTADOS,
+  exportar,
+  filtrar,
+  importar,
+  type Fila,
+  type Filtro,
+} from "@/lib/candidaturas";
 import { db } from "@/lib/store";
 import type { Candidatura, Oferta, Perfil } from "@/lib/tipos";
-
-interface Fila {
-  c: Candidatura;
-  o?: Oferta;
-}
 
 async function leeFilas(): Promise<Fila[]> {
   const cs = await db.candidaturas.orderBy("actualizada").reverse().toArray();
@@ -21,6 +26,8 @@ export default function PaginaCandidaturas() {
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [aviso, setAviso] = useState("");
   const [generando, setGenerando] = useState("");
+  const [filtro, setFiltro] = useState<Filtro>("activas");
+  const [busqueda, setBusqueda] = useState("");
 
   const carga = useCallback(() => leeFilas().then(setFilas), []);
 
@@ -74,6 +81,14 @@ export default function PaginaCandidaturas() {
     }
   };
 
+  const cuenta = contar(filas);
+  const visibles = filtrar(filas, filtro, busqueda);
+  const filtros: { id: Filtro; etiqueta: string }[] = [
+    { id: "activas", etiqueta: "En marcha" },
+    ...ESTADOS.filter((e) => cuenta[e.id] > 0).map((e) => ({ id: e.id, etiqueta: e.etiqueta })),
+    { id: "todas", etiqueta: "Todas" },
+  ];
+
   return (
     <div className="space-y-4">
       <section className="card flex flex-wrap items-center gap-3">
@@ -99,7 +114,38 @@ export default function PaginaCandidaturas() {
         </p>
       )}
 
-      {filas.map(({ c, o }) => (
+      {filas.length > 0 && (
+        <>
+          <nav aria-label="Filtros" className="flex flex-wrap gap-2">
+            {filtros.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                aria-pressed={filtro === f.id}
+                className="boton-sec"
+                onClick={() => setFiltro(f.id)}
+              >
+                {f.etiqueta} <b>{cuenta[f.id]}</b>
+              </button>
+            ))}
+          </nav>
+          <input
+            type="search"
+            className="campo"
+            placeholder="Buscar empresa o puesto"
+            aria-label="Buscar empresa o puesto"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+          {visibles.length === 0 && (
+            <p className="card text-muted">
+              No hay candidaturas con este filtro. Prueba con «Todas».
+            </p>
+          )}
+        </>
+      )}
+
+      {visibles.map(({ c, o }) => (
         <section key={c.ofertaId} className="card space-y-3">
           <div>
             {o?.url ? (
