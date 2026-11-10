@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { guardar } from "@/lib/candidaturas";
 import { pasaFiltro, puntuar } from "@/lib/encaje";
-import { db } from "@/lib/store";
+import { borrarOfertasNoGuardadas, db } from "@/lib/store";
 import type { Encaje, Oferta } from "@/lib/tipos";
 import { useConsulta } from "@/lib/useConsulta.ts";
 
@@ -38,6 +38,7 @@ export function PaginaOfertas() {
   const [enlace, setEnlace] = useState("");
   const [importando, setImportando] = useState(false);
   const [avisoImporta, setAvisoImporta] = useState("");
+  const [avisoLimpieza, setAvisoLimpieza] = useState("");
   const [manual, setManual] = useState(false);
   const [mano, setMano] = useState({ titulo: "", empresa: "", url: "", descripcion: "" });
 
@@ -136,6 +137,13 @@ export function PaginaOfertas() {
     (a, b) => (encajes[b.id]?.nota ?? -1) - (encajes[a.id]?.nota ?? -1),
   );
   const sinPuntuar = visibles.filter((o) => !encajes[o.id]);
+  const sinGuardar = (almacenadas ?? []).filter((o) => !guardadas.has(o.id)).length;
+
+  const limpia = async () => {
+    if (!confirm(`¿Borrar ${sinGuardar} ofertas no guardadas? Las guardadas no se tocan.`)) return;
+    const n = await borrarOfertasNoGuardadas();
+    setAvisoLimpieza(`Se han borrado ${n} ofertas`);
+  };
 
   return (
     <div className="space-y-4">
@@ -250,6 +258,21 @@ export function PaginaOfertas() {
             {puntuando ? "Puntuando…" : `Puntuar ${sinPuntuar.length} con la IA`}
           </button>
           {!perfil && <span className="text-muted">Primero sube tu CV en Perfil.</span>}
+        </div>
+      )}
+
+      {(sinGuardar > 0 || avisoLimpieza) && (
+        <div className="space-y-3">
+          {sinGuardar > 0 && (
+            <button className="boton-sec" onClick={limpia}>
+              Borrar ofertas no guardadas
+            </button>
+          )}
+          {avisoLimpieza && (
+            <p role="status" className="bg-warn-soft text-warn rounded-lg p-3">
+              {avisoLimpieza}
+            </p>
+          )}
         </div>
       )}
 
