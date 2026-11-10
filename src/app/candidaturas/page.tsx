@@ -19,8 +19,9 @@ import type { Candidatura, Oferta, Perfil } from "@/lib/tipos";
 
 async function leeFilas(): Promise<Fila[]> {
   const cs = await db.candidaturas.orderBy("actualizada").reverse().toArray();
-  const os = await db.ofertas.bulkGet(cs.map((c) => c.ofertaId));
-  return cs.map((c, i) => ({ c, o: os[i] }));
+  const ids = cs.map((c) => c.ofertaId);
+  const [os, es] = await Promise.all([db.ofertas.bulkGet(ids), db.encajes.bulkGet(ids)]);
+  return cs.map((c, i) => ({ c, o: os[i], e: es[i] }));
 }
 
 export default function PaginaCandidaturas() {
@@ -186,112 +187,138 @@ export default function PaginaCandidaturas() {
         </>
       )}
 
-      {visibles.map(({ c, o }) => (
-        <section key={c.ofertaId} className="card space-y-3">
-          <div>
-            {o?.url ? (
+      {visibles.map(({ c, o, e }) => (
+        <details key={c.ofertaId} className="card group">
+          <summary className="cursor-pointer list-none">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-muted text-sm font-semibold tracking-wide break-words uppercase">
+                  {o?.empresa ?? "Oferta"}
+                </p>
+                <h2 className="text-lg font-bold break-words">{o?.titulo ?? c.ofertaId}</h2>
+              </div>
+              <span className="chip shrink-0 font-bold">
+                {ESTADOS.find((s) => s.id === c.estado)?.etiqueta}
+              </span>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {e && <span className="chip">Encaje {e.nota}/100</span>}
+              {o?.ubicacion && <span className="chip">{o.ubicacion}</span>}
+              {o?.salario && <span className="chip">{o.salario}</span>}
+              <span className="chip">
+                Guardada el {new Date(c.creada).toLocaleDateString("es-ES")}
+              </span>
+              <span className="text-accent ml-auto text-sm font-semibold" aria-hidden>
+                <span className="group-open:hidden">Ver detalle ▾</span>
+                <span className="hidden group-open:inline">Ocultar ▴</span>
+              </span>
+            </div>
+          </summary>
+          <div className="space-y-3 pt-3">
+            {o?.url && (
               <a
                 href={o.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-accent font-bold"
+                className="text-accent block font-bold"
               >
-                {o.titulo}
+                Abrir la oferta
               </a>
-            ) : o ? (
-              <b>{o.titulo}</b>
-            ) : (
-              <b>{c.ofertaId}</b>
+            )}
+            {e && e.cumple.length > 0 && (
+              <p>
+                <b>Por qué encaja:</b> {e.cumple.join(" · ")}
+              </p>
+            )}
+            {e && e.falta.length > 0 && (
+              <p>
+                <b>Lo que falta:</b> {e.falta.join(" · ")}
+              </p>
+            )}
+            <label className="block">
+              Estado
+              <select
+                className="campo"
+                value={c.estado}
+                onChange={(e) =>
+                  cambia(c.ofertaId, { estado: e.target.value as Candidatura["estado"] })
+                }
+              >
+                {ESTADOS.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.etiqueta}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="flex justify-between">
+                Notas
+                {guardado === c.ofertaId && <span className="text-muted text-sm">Guardado</span>}
+              </span>
+              <textarea
+                className="campo"
+                rows={2}
+                defaultValue={c.notas}
+                onChange={(e) => escribeNota(c.ofertaId, e.target.value)}
+              />
+            </label>
+            <label className="block">
+              Carta de presentación
+              <textarea
+                className="campo"
+                rows={6}
+                defaultValue={c.carta}
+                key={c.carta}
+                onBlur={(e) =>
+                  e.target.value !== c.carta && cambia(c.ofertaId, { carta: e.target.value })
+                }
+              />
+            </label>
+            {c.carta && (
+              <div className="flex flex-wrap gap-2">
+                <button className="boton-sec" onClick={() => copia(c.ofertaId, c.carta)}>
+                  {copiada === c.ofertaId ? "Copiada" : "Copiar carta"}
+                </button>
+                <button className="boton-sec" onClick={() => descargaCarta(o, c.carta)}>
+                  Descargar carta (.txt)
+                </button>
+              </div>
             )}
             {o && (
-              <p className="text-muted">
-                {o.empresa} · {o.ubicacion}
+              <button
+                className="boton-sec"
+                disabled={!perfil || generando === o.id}
+                onClick={() => generaCarta(o)}
+              >
+                {generando === o.id ? "Escribiendo…" : "Escribir carta con la IA"}
+              </button>
+            )}
+            {confirmar === c.ofertaId ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span>¿Quitar esta candidatura de tu lista?</span>
+                <button className="boton-sec" onClick={() => quita(c.ofertaId)}>
+                  Quitar
+                </button>
+                <button className="boton-sec" onClick={() => setConfirmar("")}>
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button
+                className="text-bad self-start py-2 text-sm underline"
+                onClick={() => setConfirmar(c.ofertaId)}
+              >
+                Quitar de la lista
+              </button>
+            )}
+            {!perfil && (
+              <p className="text-muted text-sm">
+                Para escribir la carta, primero sube tu CV en Perfil.
               </p>
             )}
           </div>
-          <label className="block">
-            Estado
-            <select
-              className="campo"
-              value={c.estado}
-              onChange={(e) =>
-                cambia(c.ofertaId, { estado: e.target.value as Candidatura["estado"] })
-              }
-            >
-              {ESTADOS.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.etiqueta}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block">
-            <span className="flex justify-between">
-              Notas
-              {guardado === c.ofertaId && <span className="text-muted text-sm">Guardado</span>}
-            </span>
-            <textarea
-              className="campo"
-              rows={2}
-              defaultValue={c.notas}
-              onChange={(e) => escribeNota(c.ofertaId, e.target.value)}
-            />
-          </label>
-          <label className="block">
-            Carta de presentación
-            <textarea
-              className="campo"
-              rows={6}
-              defaultValue={c.carta}
-              key={c.carta}
-              onBlur={(e) =>
-                e.target.value !== c.carta && cambia(c.ofertaId, { carta: e.target.value })
-              }
-            />
-          </label>
-          {c.carta && (
-            <div className="flex flex-wrap gap-2">
-              <button className="boton-sec" onClick={() => copia(c.ofertaId, c.carta)}>
-                {copiada === c.ofertaId ? "Copiada" : "Copiar carta"}
-              </button>
-              <button className="boton-sec" onClick={() => descargaCarta(o, c.carta)}>
-                Descargar carta (.txt)
-              </button>
-            </div>
-          )}
-          {o && (
-            <button
-              className="boton-sec"
-              disabled={!perfil || generando === o.id}
-              onClick={() => generaCarta(o)}
-            >
-              {generando === o.id ? "Escribiendo…" : "Escribir carta con la IA"}
-            </button>
-          )}
-          {confirmar === c.ofertaId ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span>¿Quitar esta candidatura de tu lista?</span>
-              <button className="boton-sec" onClick={() => quita(c.ofertaId)}>
-                Quitar
-              </button>
-              <button className="boton-sec" onClick={() => setConfirmar("")}>
-                Cancelar
-              </button>
-            </div>
-          ) : (
-            <button
-              className="text-bad self-start py-2 text-sm underline"
-              onClick={() => setConfirmar(c.ofertaId)}
-            >
-              Quitar de la lista
-            </button>
-          )}
-          {!perfil && (
-            <p className="text-muted text-sm">
-              Para escribir la carta, primero sube tu CV en Perfil.
-            </p>
-          )}
-        </section>
+        </details>
       ))}
     </div>
   );

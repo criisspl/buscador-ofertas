@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { preguntar, type Pregunta } from "./ia/cliente.ts";
 import type { BaseDatos } from "./store.ts";
-import type { Ajustes, Candidatura, EstadoCandidatura, Oferta, Perfil } from "./tipos.ts";
+import type { Ajustes, Candidatura, Encaje, EstadoCandidatura, Oferta, Perfil } from "./tipos.ts";
 
 export const ESTADOS: { id: EstadoCandidatura; etiqueta: string }[] = [
   { id: "guardada", etiqueta: "Guardada" },
@@ -17,6 +17,7 @@ export const ESTADOS: { id: EstadoCandidatura; etiqueta: string }[] = [
 export interface Fila {
   c: Candidatura;
   o?: Oferta;
+  e?: Encaje;
 }
 
 export type Filtro = "activas" | "todas" | EstadoCandidatura;
