@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   actualizar,
   cartaPara,
@@ -9,6 +9,7 @@ import {
   exportar,
   filtrar,
   importar,
+  nombreCarta,
   type Fila,
   type Filtro,
 } from "@/lib/candidaturas";
@@ -28,6 +29,9 @@ export default function PaginaCandidaturas() {
   const [generando, setGenerando] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("activas");
   const [busqueda, setBusqueda] = useState("");
+  const [copiada, setCopiada] = useState("");
+  const [guardado, setGuardado] = useState("");
+  const temporizadores = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const carga = useCallback(() => leeFilas().then(setFilas), []);
 
@@ -59,6 +63,34 @@ export default function PaginaCandidaturas() {
     } finally {
       setGenerando("");
     }
+  };
+
+  const copia = async (id: string, texto: string) => {
+    try {
+      await navigator.clipboard.writeText(texto);
+      setCopiada(id);
+      setTimeout(() => setCopiada(""), 1600);
+    } catch {
+      setAviso("No se ha podido copiar. Selecciona el texto y cópialo a mano.");
+    }
+  };
+
+  const descargaCarta = (o: Oferta | undefined, texto: string) => {
+    const url = URL.createObjectURL(new Blob([texto], { type: "text/plain;charset=utf-8" }));
+    Object.assign(document.createElement("a"), {
+      href: url,
+      download: nombreCarta(o?.empresa),
+    }).click();
+    URL.revokeObjectURL(url);
+  };
+
+  const escribeNota = (id: string, notas: string) => {
+    clearTimeout(temporizadores.current[id]);
+    setGuardado("");
+    temporizadores.current[id] = setTimeout(async () => {
+      await cambia(id, { notas });
+      setGuardado(id);
+    }, 700);
   };
 
   const descarga = async () => {
@@ -185,14 +217,15 @@ export default function PaginaCandidaturas() {
             </select>
           </label>
           <label className="block">
-            Notas
+            <span className="flex justify-between">
+              Notas
+              {guardado === c.ofertaId && <span className="text-muted text-sm">Guardado</span>}
+            </span>
             <textarea
               className="campo"
               rows={2}
               defaultValue={c.notas}
-              onBlur={(e) =>
-                e.target.value !== c.notas && cambia(c.ofertaId, { notas: e.target.value })
-              }
+              onChange={(e) => escribeNota(c.ofertaId, e.target.value)}
             />
           </label>
           <label className="block">
@@ -207,6 +240,16 @@ export default function PaginaCandidaturas() {
               }
             />
           </label>
+          {c.carta && (
+            <div className="flex flex-wrap gap-2">
+              <button className="boton-sec" onClick={() => copia(c.ofertaId, c.carta)}>
+                {copiada === c.ofertaId ? "Copiada" : "Copiar carta"}
+              </button>
+              <button className="boton-sec" onClick={() => descargaCarta(o, c.carta)}>
+                Descargar carta (.txt)
+              </button>
+            </div>
+          )}
           {o && (
             <button
               className="boton-sec"
