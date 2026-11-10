@@ -1,45 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { guardar } from "@/lib/candidaturas";
 import { pasaFiltro, puntuar } from "@/lib/encaje";
 import { db } from "@/lib/store";
-import type { Encaje, Oferta, Perfil, Preferencias } from "@/lib/tipos";
+import type { Encaje, Oferta } from "@/lib/tipos";
+import { useConsulta } from "@/lib/useConsulta.ts";
+
+const leeOfertas = () => db.ofertas.toArray();
+const leePerfil = () => db.perfil.get("perfil");
+const leePrefs = () => db.preferencias.get("preferencias");
+const leeEncajes = async () => {
+  const l = await db.encajes.toArray();
+  return Object.fromEntries(l.map((e) => [e.ofertaId, e])) as Record<string, Encaje>;
+};
+const leeGuardadas = async () => new Set(await db.candidaturas.toCollection().primaryKeys());
 
 export function PaginaOfertas() {
-  const [q, setQ] = useState("");
-  const [ubicacion, setUbicacion] = useState("");
-  const [remoto, setRemoto] = useState(true);
-  const [ofertas, setOfertas] = useState<Oferta[]>([]);
+  const almacenadas = useConsulta(leeOfertas);
+  const perfil = useConsulta(leePerfil) ?? null;
+  const prefs = useConsulta(leePrefs) ?? null;
+  const encajes = useConsulta(leeEncajes) ?? {};
+  const guardadas = useConsulta(leeGuardadas) ?? new Set<string>();
+  // Mientras la persona no toca el formulario, se usan las preferencias guardadas.
+  const [qEditado, setQ] = useState<string | null>(null);
+  const [ubicacionEditada, setUbicacion] = useState<string | null>(null);
+  const [remotoEditado, setRemoto] = useState<boolean | null>(null);
+  const q = qEditado ?? prefs?.puestos[0] ?? "";
+  const ubicacion = ubicacionEditada ?? prefs?.ubicacion ?? "";
+  const remoto = remotoEditado ?? prefs?.remoto ?? true;
+  // Tras una búsqueda se enseñan solo sus resultados (y lo que se añada después).
+  const [idsMostrados, setIdsMostrados] = useState<Set<string> | null>(null);
+  const ofertas = (almacenadas ?? []).filter((o) => !idsMostrados || idsMostrados.has(o.id));
   const [cargando, setCargando] = useState(false);
   const [aviso, setAviso] = useState("");
-  const [perfil, setPerfil] = useState<Perfil | null>(null);
-  const [prefs, setPrefs] = useState<Preferencias | null>(null);
-  const [encajes, setEncajes] = useState<Record<string, Encaje>>({});
   const [puntuando, setPuntuando] = useState(false);
   const [enlace, setEnlace] = useState("");
   const [importando, setImportando] = useState(false);
   const [avisoImporta, setAvisoImporta] = useState("");
   const [manual, setManual] = useState(false);
   const [mano, setMano] = useState({ titulo: "", empresa: "", url: "", descripcion: "" });
-  const [guardadas, setGuardadas] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    db.candidaturas
-      .toCollection()
-      .primaryKeys()
-      .then((k) => setGuardadas(new Set(k)));
-    db.perfil.get("perfil").then((p) => p && setPerfil(p));
-    db.encajes.toArray().then((l) => setEncajes(Object.fromEntries(l.map((e) => [e.ofertaId, e]))));
-    db.preferencias.get("preferencias").then((p) => {
-      if (!p) return;
-      setPrefs(p);
-      setQ(p.puestos[0] ?? "");
-      setUbicacion(p.ubicacion);
-      setRemoto(p.remoto);
-    });
-    db.ofertas.toArray().then(setOfertas);
-  }, []);
 
   const busca = async () => {
     setCargando(true);
@@ -50,7 +50,7 @@ export function PaginaOfertas() {
       const d = await r.json();
       if (!r.ok) throw new Error(d.mensaje ?? "No se ha podido buscar.");
       await db.ofertas.bulkPut(d.ofertas);
-      setOfertas(d.ofertas);
+      setIdsMostrados(new Set(d.ofertas.map((x: Oferta) => x.id)));
       if (d.fallos.length) setAviso(`No han respondido: ${d.fallos.join(", ")}.`);
       else if (!d.ofertas.length) setAviso("Sin resultados. Prueba con otro puesto.");
     } catch (e) {
@@ -62,7 +62,7 @@ export function PaginaOfertas() {
 
   const añade = async (o: Oferta) => {
     await db.ofertas.put(o);
-    setOfertas((l) => [o, ...l.filter((x) => x.id !== o.id)]);
+    setIdsMostrados((ids) => ids && new Set(ids).add(o.id));
   };
 
   const importa = async () => {
@@ -124,7 +124,6 @@ export function PaginaOfertas() {
       for (const o of lista) {
         const e = await puntuar(o, perfil, prefs, ajustes);
         await db.encajes.put(e);
-        setEncajes((previos) => ({ ...previos, [o.id]: e }));
       }
     } catch (e) {
       setAviso(e instanceof Error ? e.message : "No se ha podido puntuar.");
@@ -290,7 +289,6 @@ export function PaginaOfertas() {
               disabled={guardadas.has(o.id)}
               onClick={async () => {
                 await guardar(db, o.id);
-                setGuardadas((g) => new Set(g).add(o.id));
               }}
             >
               {guardadas.has(o.id) ? "Guardada" : "Guardar"}

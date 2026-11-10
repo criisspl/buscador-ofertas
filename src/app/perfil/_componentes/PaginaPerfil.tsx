@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ErrorCv, extraerTextoPdf } from "@/lib/cv/texto";
 import { perfilDesdeCv } from "@/lib/cv/perfil";
 import { ErrorIa } from "@/lib/ia/cliente";
 import { db } from "@/lib/store";
+import { useConsulta } from "@/lib/useConsulta.ts";
 import type { Ajustes, Perfil, Preferencias } from "@/lib/tipos";
 
 const PREFS: Preferencias = {
@@ -20,18 +21,21 @@ const lista = (t: string) =>
     .map((s) => s.trim())
     .filter(Boolean);
 
+const leePerfil = () => db.perfil.get("perfil");
+const leePrefs = () => db.preferencias.get("preferencias");
+
 export function PaginaPerfil() {
-  const [perfil, setPerfil] = useState<Perfil | null>(null);
-  const [prefs, setPrefs] = useState<Preferencias>(PREFS);
+  // Lo guardado llega de Dexie; `*Editad*` guarda lo que la persona va tocando sin guardar.
+  const guardadoPerfil = useConsulta(leePerfil);
+  const guardadoPrefs = useConsulta(leePrefs);
+  const [perfilEditado, setPerfil] = useState<Perfil | null>(null);
+  const [prefsEditadas, setPrefs] = useState<Preferencias | null>(null);
+  const perfil = perfilEditado ?? guardadoPerfil ?? null;
+  const prefs = prefsEditadas ?? guardadoPrefs ?? PREFS;
   const [textoPendiente, setTextoPendiente] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
   const [guardado, setGuardado] = useState(false);
-
-  useEffect(() => {
-    db.perfil.get("perfil").then((p) => p && setPerfil(p));
-    db.preferencias.get("preferencias").then((p) => p && setPrefs(p));
-  }, []);
 
   const leePdf = async (f: File) => {
     setError("");
