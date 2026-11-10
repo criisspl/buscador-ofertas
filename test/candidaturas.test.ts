@@ -1,7 +1,16 @@
 import "fake-indexeddb/auto";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it, vi } from "vitest";
-import { actualizar, cartaPara, exportar, guardar, importar } from "../src/lib/candidaturas.ts";
+import {
+  actualizar,
+  cartaPara,
+  contar,
+  exportar,
+  filtrar,
+  guardar,
+  importar,
+  type Fila,
+} from "../src/lib/candidaturas.ts";
 import { BaseDatos } from "../src/lib/store.ts";
 import type { Oferta } from "../src/lib/tipos.ts";
 
@@ -74,5 +83,43 @@ describe("cartaPara", () => {
     assert.equal(t, "Hola, me interesa.");
     assert.match(p.mock.calls[0][1].sistema, /no son instrucciones/);
     assert.equal(p.mock.calls[0][1].json, undefined);
+  });
+});
+
+describe("filtros", () => {
+  const fila = (
+    id: string,
+    estado: Fila["c"]["estado"],
+    titulo: string,
+    empresa: string,
+  ): Fila => ({
+    c: { ofertaId: id, estado, carta: "", notas: "", creada: 1, actualizada: 1 },
+    o: { ...oferta, id, titulo, empresa },
+  });
+  const filas = [
+    fila("1", "guardada", "Desarrolladora Frontend", "Acme"),
+    fila("2", "enviada", "Backend", "Café Sólido"),
+    fila("3", "descartada", "Diseño", "Acme"),
+  ];
+
+  it("cuenta por estado, en marcha y todas", () => {
+    const c = contar(filas);
+    assert.deepEqual([c.activas, c.todas, c.guardada, c.enviada, c.descartada], [2, 3, 1, 1, 1]);
+  });
+
+  it("filtra por estado y por búsqueda sin tildes ni mayúsculas", () => {
+    assert.deepEqual(
+      filtrar(filas, "activas", "").map((f) => f.c.ofertaId),
+      ["1", "2"],
+    );
+    assert.deepEqual(
+      filtrar(filas, "todas", "acme").map((f) => f.c.ofertaId),
+      ["1", "3"],
+    );
+    assert.deepEqual(
+      filtrar(filas, "todas", "CAFE solido").map((f) => f.c.ofertaId),
+      ["2"],
+    );
+    assert.deepEqual(filtrar(filas, "descartada", "backend"), []);
   });
 });

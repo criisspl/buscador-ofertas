@@ -15,7 +15,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="es" className="h-full antialiased">
       <body className="min-h-full">
         <header className="border-line bg-surface border-b">
-          <nav className="mx-auto flex max-w-3xl items-center gap-5 px-4 py-3">
+          <nav className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-5 gap-y-1 px-4 py-3">
             <Link href="/" className="font-bold">
               Buscador de ofertas
             </Link>

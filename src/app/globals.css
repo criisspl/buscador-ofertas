@@ -99,6 +99,11 @@ body {
   font-weight: 600;
 }
 
+.boton-sec[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
 .chip {
   display: inline-block;
   background: var(--accent-soft);
