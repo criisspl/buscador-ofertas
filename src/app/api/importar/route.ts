@@ -1,26 +1,25 @@
-import { ipDe, limitador } from "@/lib/limite";
+import { aplicaLimite, json, mismoOrigen } from "@/lib/api";
 import { descargarHtml, ErrorDescarga } from "@/lib/importar/red";
 import { ErrorExtraccion, extraerOferta } from "@/lib/importar/extrae";
 
-const json = (cuerpo: unknown, status = 200) =>
-  Response.json(cuerpo, { status, headers: { "cache-control": "no-store" } });
+const MAX_BYTES = 8 * 1024;
 
 export async function POST(request: Request) {
-  const origen = request.headers.get("origin");
-  if (origen && new URL(origen).host !== new URL(request.url).host)
-    return json({ error: "origen" }, 403);
+  if (!mismoOrigen(request)) return json({ error: "origen" }, 403);
 
-  const limite = limitador("importar", 6);
-  if (limite) {
-    if (!(await limite.limit(ipDe(request))).success)
-      return json({ error: "limite", mensaje: "Vas muy rápido: espera un minuto." }, 429);
-  } else if (process.env.NODE_ENV === "production") {
-    return json({ error: "config", mensaje: "La importación no está configurada todavía." }, 503);
-  }
+  const rechazo = await aplicaLimite(request, {
+    prefijo: "importar",
+    peticiones: 6,
+    mensajeConfig: "La importación no está configurada todavía.",
+  });
+  if (rechazo) return rechazo;
 
   let enlace: unknown;
   try {
-    enlace = (await request.json()).url;
+    const texto = await request.text();
+    if (texto.length > MAX_BYTES)
+      return json({ error: "grande", mensaje: "La petición pesa demasiado." }, 413);
+    enlace = JSON.parse(texto).url;
   } catch {
     return json({ error: "formato", mensaje: "Petición no válida." }, 400);
   }

@@ -1,9 +1,8 @@
 import { Redis } from "@upstash/redis";
-import { ipDe, limitador } from "@/lib/limite";
+import { aplicaLimite, json, mismoOrigen } from "@/lib/api";
 import { borrar, escribir, leer, MAX_BLOB, type Almacen, type Registro } from "@/lib/nube/servidor";
 
-const respuesta = (status: number, cuerpo: unknown) =>
-  Response.json(cuerpo, { status, headers: { "cache-control": "no-store" } });
+const respuesta = (status: number, cuerpo: unknown) => json(cuerpo, status);
 
 function almacen(): Almacen | null {
   const { UPSTASH_REDIS_REST_URL: url, UPSTASH_REDIS_REST_TOKEN: token } = process.env;
@@ -18,19 +17,19 @@ function almacen(): Almacen | null {
 
 /** Comprobaciones comunes: origen, configuración y límite por IP. Devuelve el almacén o una respuesta de error. */
 async function entrada(request: Request): Promise<Almacen | Response> {
-  const origen = request.headers.get("origin");
-  if (origen && new URL(origen).host !== new URL(request.url).host)
-    return respuesta(403, { error: "origen" });
+  if (!mismoOrigen(request)) return respuesta(403, { error: "origen" });
   const a = almacen();
   if (!a)
     return respuesta(503, {
       error: "config",
       mensaje: "La copia en la nube no está configurada todavía.",
     });
-  const limite = limitador("copia", 10);
-  if (limite && !(await limite.limit(ipDe(request))).success)
-    return respuesta(429, { error: "limite", mensaje: "Vas muy rápido: espera un minuto." });
-  return a;
+  const rechazo = await aplicaLimite(request, {
+    prefijo: "copia",
+    peticiones: 10,
+    mensajeConfig: "La copia en la nube no está configurada todavía.",
+  });
+  return rechazo ?? a;
 }
 
 async function conCuerpo(

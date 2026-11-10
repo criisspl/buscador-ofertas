@@ -1,22 +1,15 @@
-import { ipDe, limitador } from "@/lib/limite";
+import { aplicaLimite, json, mismoOrigen } from "@/lib/api";
 import { buscar } from "@/lib/ofertas/fuentes";
 
-const json = (cuerpo: unknown, status = 200) =>
-  Response.json(cuerpo, { status, headers: { "cache-control": "no-store" } });
-
 export async function GET(request: Request) {
-  const origen = request.headers.get("origin");
-  if (origen && new URL(origen).host !== new URL(request.url).host)
-    return json({ error: "origen" }, 403);
+  if (!mismoOrigen(request)) return json({ error: "origen" }, 403);
 
-  const limite = limitador("ofertas", 20);
-  if (limite) {
-    const { success } = await limite.limit(ipDe(request));
-    if (!success)
-      return json({ error: "limite", mensaje: "Vas muy rápido: espera un minuto." }, 429);
-  } else if (process.env.NODE_ENV === "production") {
-    return json({ error: "config", mensaje: "La búsqueda no está configurada todavía." }, 503);
-  }
+  const rechazo = await aplicaLimite(request, {
+    prefijo: "ofertas",
+    peticiones: 20,
+    mensajeConfig: "La búsqueda no está configurada todavía.",
+  });
+  if (rechazo) return rechazo;
 
   const p = new URL(request.url).searchParams;
   const q = (p.get("q") ?? "").trim().slice(0, 100);

@@ -1,9 +1,12 @@
-import { ipDe, limitador } from "@/lib/limite";
+import { aplicaLimite, json, mismoOrigen } from "@/lib/api";
+import { limitador } from "@/lib/limite";
 import { llamarProveedores, type Proveedor } from "@/lib/ia/servidor";
-import { MAX_BYTES, valida, type Entrada } from "@/lib/ia/valida";
+import { MAX_BYTES, valida } from "@/lib/ia/valida";
 
-const json = (cuerpo: unknown, status: number) =>
-  Response.json(cuerpo, { status, headers: { "cache-control": "no-store" } });
+// Tope global de peticiones a la IA al día, sumando a todas las personas, para no agotar los
+// cupos gratuitos de Groq y Mistral. 500 deja unas 60 sesiones de 8 consultas al día; súbelo si
+// los proveedores lo aguantan.
+const TOPE_DIARIO = 500;
 
 const MENSAJES = {
   config: { error: "config", mensaje: "La IA de esta web no está configurada todavía." },
@@ -38,35 +41,33 @@ function proveedores(): Proveedor[] {
 
 export async function POST(request: Request) {
   // Solo desde la propia web: evita que otras páginas gasten tu cupo.
-  const origen = request.headers.get("origin");
-  if (origen && new URL(origen).host !== new URL(request.url).host)
-    return json({ error: "origen" }, 403);
+  if (!mismoOrigen(request)) return json({ error: "origen" }, 403);
 
-  const limite = limitador("ia", 8);
-  if (limite) {
-    const { success } = await limite.limit(ipDe(request));
-    if (!success)
-      return json(
-        { error: "limite", mensaje: "Vas muy rápido: espera un minuto y vuelve a intentarlo." },
-        429,
-      );
-  } else if (process.env.NODE_ENV === "production") {
-    return json(MENSAJES.config, STATUS.config);
-  }
+  const rechazo = await aplicaLimite(request, {
+    prefijo: "ia",
+    peticiones: 8,
+    mensajeConfig: MENSAJES.config.mensaje,
+    mensajeLimite: "Vas muy rápido: espera un minuto y vuelve a intentarlo.",
+  });
+  if (rechazo) return rechazo;
 
-  let entrada: Entrada;
+  let cuerpo: unknown;
   try {
     const texto = await request.text();
     if (texto.length > MAX_BYTES)
       return json({ error: "grande", mensaje: "El texto pesa demasiado." }, 413);
-    entrada = JSON.parse(texto);
+    cuerpo = JSON.parse(texto);
   } catch {
     return json({ error: "formato", mensaje: "Petición no válida." }, 400);
   }
-  const fallo = valida(entrada);
-  if (fallo) return json({ error: "formato", mensaje: fallo }, 400);
+  const v = valida(cuerpo);
+  if (!v.ok) return json({ error: "formato", mensaje: v.fallo }, 400);
 
-  const r = await llamarProveedores(entrada, proveedores());
+  // Tope global: se cuenta solo lo que llegaría a los proveedores.
+  const global = limitador("ia-dia", TOPE_DIARIO, "1 d");
+  if (global && !(await global.limit("global")).success) return json(MENSAJES.cupo, STATUS.cupo);
+
+  const r = await llamarProveedores(v.entrada, proveedores());
   if (!r.ok) return json(MENSAJES[r.error], STATUS[r.error]);
   return new Response(r.cuerpo, {
     status: r.status,
