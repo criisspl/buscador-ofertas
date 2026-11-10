@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CandidaturaSchema, OfertaSchema } from "./esquemas.ts";
 import { preguntar, type Pregunta } from "./ia/cliente.ts";
 import type { BaseDatos } from "./store.ts";
 import type { Ajustes, Candidatura, Encaje, EstadoCandidatura, Oferta, Perfil } from "./tipos.ts";
@@ -92,41 +93,8 @@ export async function borrar(db: BaseDatos, ofertaId: string) {
 
 const CopiaSchema = z.object({
   version: z.literal(1),
-  ofertas: z.array(
-    z.object({
-      id: z.string().max(300),
-      fuente: z.string().max(50),
-      idExterno: z.string().max(300),
-      titulo: z.string().max(300),
-      empresa: z.string().max(300),
-      ubicacion: z.string().max(300),
-      salario: z.string().max(100).optional(),
-      url: z
-        .string()
-        .regex(/^https?:\/\//i)
-        .max(2000),
-      descripcion: z.string().max(5000),
-    }),
-  ),
-  candidaturas: z.array(
-    z.object({
-      ofertaId: z.string().max(300),
-      estado: z.enum([
-        "guardada",
-        "enviada",
-        "contacto",
-        "entrevista",
-        "oferta",
-        "rechazada",
-        "descartada",
-        "cerrada",
-      ]),
-      carta: z.string().max(10_000),
-      notas: z.string().max(10_000),
-      creada: z.number(),
-      actualizada: z.number(),
-    }),
-  ),
+  ofertas: z.array(OfertaSchema),
+  candidaturas: z.array(CandidaturaSchema),
 });
 
 /** Copia de seguridad en JSON de tus candidaturas y de las ofertas a las que se refieren. */

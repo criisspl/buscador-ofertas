@@ -1,14 +1,21 @@
 import { z } from "zod";
+import {
+  CandidaturaSchema,
+  EncajeSchema,
+  OfertaSchema,
+  PerfilSchema,
+  PreferenciasSchema,
+} from "./esquemas.ts";
 import type { BaseDatos } from "./store.ts";
 
 // Copia completa de los datos. Los ajustes (con tu clave de IA) se quedan fuera a propósito.
 const Copia = z.object({
   version: z.literal(1),
-  perfil: z.any().optional(),
-  preferencias: z.any().optional(),
-  ofertas: z.array(z.any()),
-  encajes: z.array(z.any()),
-  candidaturas: z.array(z.any()),
+  perfil: PerfilSchema.optional(),
+  preferencias: PreferenciasSchema.optional(),
+  ofertas: z.array(OfertaSchema),
+  encajes: z.array(EncajeSchema),
+  candidaturas: z.array(CandidaturaSchema),
 });
 
 export async function instantanea(db: BaseDatos): Promise<string> {
@@ -23,12 +30,19 @@ export async function instantanea(db: BaseDatos): Promise<string> {
 }
 
 export async function restaurar(db: BaseDatos, texto: string): Promise<void> {
-  let c;
+  let json: unknown;
   try {
-    c = Copia.parse(JSON.parse(texto));
+    json = JSON.parse(texto);
   } catch {
-    throw new Error("La copia no tiene el formato esperado.");
+    throw new Error("La copia no es un JSON válido.");
   }
+  const r = Copia.safeParse(json);
+  if (!r.success) {
+    const fallo = r.error.issues[0];
+    const donde = fallo?.path.join(".") || "raíz";
+    throw new Error(`La copia no tiene el formato esperado (${donde}: ${fallo?.message}).`);
+  }
+  const c = r.data;
   await db.transaction(
     "rw",
     [db.perfil, db.preferencias, db.ofertas, db.encajes, db.candidaturas],
