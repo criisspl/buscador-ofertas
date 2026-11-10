@@ -56,6 +56,24 @@ describe("candidaturas", () => {
     assert.equal((await db.candidaturas.get("a:1"))?.notas, "");
   });
 
+  it("los estados nuevos se guardan, cuentan como en marcha o no, y viajan en la copia", async () => {
+    await guardar(db, "a:1", 1);
+    await actualizar(db, "a:1", { estado: "contacto" }, 2);
+    const copia = await exportar(db);
+    const otra = new BaseDatos(`test-${Math.random()}`);
+    await otra.open();
+    await importar(otra, copia);
+    const c = (await otra.candidaturas.get("a:1"))!;
+    assert.equal(c.estado, "contacto");
+    const filas = [
+      { c },
+      { c: { ...c, estado: "rechazada" as const } },
+      { c: { ...c, estado: "cerrada" as const } },
+    ];
+    const n = contar(filas);
+    assert.deepEqual([n.activas, n.rechazada, n.cerrada, n.todas], [1, 1, 1, 3]);
+  });
+
   it("exporta e importa en otra base", async () => {
     await guardar(db, "a:1", 1);
     const copia = await exportar(db);

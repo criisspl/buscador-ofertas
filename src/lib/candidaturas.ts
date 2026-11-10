@@ -6,9 +6,12 @@ import type { Ajustes, Candidatura, EstadoCandidatura, Oferta, Perfil } from "./
 export const ESTADOS: { id: EstadoCandidatura; etiqueta: string }[] = [
   { id: "guardada", etiqueta: "Guardada" },
   { id: "enviada", etiqueta: "Enviada" },
+  { id: "contacto", etiqueta: "En contacto" },
   { id: "entrevista", etiqueta: "Entrevista" },
   { id: "oferta", etiqueta: "Oferta recibida" },
+  { id: "rechazada", etiqueta: "No seleccionada" },
   { id: "descartada", etiqueta: "Descartada" },
+  { id: "cerrada", etiqueta: "Ya no disponible" },
 ];
 
 export interface Fila {
@@ -19,7 +22,7 @@ export interface Fila {
 export type Filtro = "activas" | "todas" | EstadoCandidatura;
 
 /** Estados de una candidatura que sigue en marcha. */
-const ACTIVAS: EstadoCandidatura[] = ["guardada", "enviada", "entrevista", "oferta"];
+const ACTIVAS: EstadoCandidatura[] = ["guardada", "enviada", "contacto", "entrevista", "oferta"];
 
 const enFiltro = (f: Fila, filtro: Filtro) =>
   filtro === "todas" ||
@@ -107,7 +110,16 @@ const CopiaSchema = z.object({
   candidaturas: z.array(
     z.object({
       ofertaId: z.string().max(300),
-      estado: z.enum(["guardada", "enviada", "entrevista", "oferta", "descartada"]),
+      estado: z.enum([
+        "guardada",
+        "enviada",
+        "contacto",
+        "entrevista",
+        "oferta",
+        "rechazada",
+        "descartada",
+        "cerrada",
+      ]),
       carta: z.string().max(10_000),
       notas: z.string().max(10_000),
       creada: z.number(),

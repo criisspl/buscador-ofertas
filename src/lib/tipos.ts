@@ -1,6 +1,14 @@
 // Tipos del dominio. Todo lo personal vive solo en el navegador (IndexedDB).
 
-export type EstadoCandidatura = "guardada" | "enviada" | "entrevista" | "oferta" | "descartada";
+export type EstadoCandidatura =
+  | "guardada"
+  | "enviada"
+  | "contacto"
+  | "entrevista"
+  | "oferta"
+  | "rechazada"
+  | "descartada"
+  | "cerrada";
 
 export interface Ajustes {
   id: "ajustes";
