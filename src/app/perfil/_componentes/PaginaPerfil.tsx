@@ -80,7 +80,7 @@ export function PaginaPerfil() {
         <h1 className="text-2xl font-bold">Tu CV</h1>
         <input
           type="file"
-          className="w-full"
+          className="min-h-11 w-full"
           accept="application/pdf"
           aria-label="Subir CV en PDF"
           onChange={(e) => e.target.files?.[0] && leePdf(e.target.files[0])}
@@ -146,7 +146,7 @@ export function PaginaPerfil() {
             onChange={(e) => cambiaPrefs({ ubicacion: e.target.value })}
           />
         </label>
-        <label className="flex gap-2">
+        <label className="flex min-h-11 items-center gap-2">
           <input
             type="checkbox"
             checked={prefs.remoto}

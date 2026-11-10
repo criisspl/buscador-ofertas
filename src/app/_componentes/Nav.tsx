@@ -21,7 +21,11 @@ export function Nav() {
       aria-label="Principal"
       className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-5 px-4"
     >
-      <Link href="/" className={`${CLASE} font-bold`}>
+      <Link
+        href="/"
+        aria-current={ruta === "/" ? "page" : undefined}
+        className={`${CLASE} font-bold`}
+      >
         Buscador de ofertas
       </Link>
       {ENLACES.map(({ href, texto }) => {
