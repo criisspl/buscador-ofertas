@@ -1,14 +1,22 @@
-// Tipos del dominio. Todo lo personal vive solo en el navegador (IndexedDB).
+import type { z } from "zod";
+import type {
+  CandidaturaSchema,
+  EncajeSchema,
+  EstadoCandidaturaSchema,
+  OfertaSchema,
+  PerfilSchema,
+  PreferenciasSchema,
+} from "./esquemas.ts";
 
-export type EstadoCandidatura =
-  | "guardada"
-  | "enviada"
-  | "contacto"
-  | "entrevista"
-  | "oferta"
-  | "rechazada"
-  | "descartada"
-  | "cerrada";
+// Tipos del dominio. Todo lo personal vive solo en el navegador (IndexedDB).
+// Los de datos guardados salen de los schemas de `esquemas.ts`.
+
+export type EstadoCandidatura = z.infer<typeof EstadoCandidaturaSchema>;
+export type Perfil = z.infer<typeof PerfilSchema>;
+export type Preferencias = z.infer<typeof PreferenciasSchema>;
+export type Oferta = z.infer<typeof OfertaSchema>;
+export type Encaje = z.infer<typeof EncajeSchema>;
+export type Candidatura = z.infer<typeof CandidaturaSchema>;
 
 export interface Ajustes {
   id: "ajustes";
@@ -17,52 +25,4 @@ export interface Ajustes {
   url?: string;
   modelo?: string;
   clave?: string;
-}
-
-export interface Perfil {
-  id: "perfil";
-  skills: string[];
-  experiencia: { puesto: string; empresa: string; desde?: string; hasta?: string }[];
-  idiomas: string[];
-  textoCv: string;
-}
-
-export interface Preferencias {
-  id: "preferencias";
-  puestos: string[];
-  ubicacion: string;
-  remoto: boolean;
-  salarioMinimo?: number;
-  jornada?: "completa" | "parcial" | "cualquiera";
-  sectoresEvitar: string[];
-}
-
-export interface Oferta {
-  /** `${fuente}:${idExterno}`, para deduplicar entre portales. */
-  id: string;
-  fuente: string;
-  idExterno: string;
-  titulo: string;
-  empresa: string;
-  ubicacion: string;
-  salario?: string;
-  url: string;
-  descripcion: string;
-}
-
-export interface Encaje {
-  ofertaId: string;
-  nota: number;
-  cumple: string[];
-  falta: string[];
-  proveedor: string;
-}
-
-export interface Candidatura {
-  ofertaId: string;
-  estado: EstadoCandidatura;
-  carta: string;
-  notas: string;
-  creada: number;
-  actualizada: number;
 }
