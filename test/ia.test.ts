@@ -22,14 +22,17 @@ afterEach(() => {
 
 describe("valida", () => {
   it("acepta un mensaje de texto", () => {
-    assert.equal(valida({ messages: [{ role: "user", content: "hola" }] }), null);
+    assert.equal(valida({ messages: [{ role: "user", content: "hola" }] }).ok, true);
   });
   it("rechaza roles no permitidos, imágenes y textos enormes", () => {
-    assert.ok(valida({ messages: [{ role: "assistant", content: "x" }] }));
-    assert.ok(valida({ messages: [{ role: "user", content: [{ type: "image_url" }] }] }));
-    assert.ok(valida({ messages: [{ role: "user", content: "x".repeat(40_001) }] }));
-    assert.ok(valida({ messages: [] }));
-    assert.ok(valida(null));
+    assert.equal(valida({ messages: [{ role: "assistant", content: "x" }] }).ok, false);
+    assert.equal(
+      valida({ messages: [{ role: "user", content: [{ type: "image_url" }] }] }).ok,
+      false,
+    );
+    assert.equal(valida({ messages: [{ role: "user", content: "x".repeat(40_001) }] }).ok, false);
+    assert.equal(valida({ messages: [] }).ok, false);
+    assert.equal(valida(null).ok, false);
   });
 });
 
