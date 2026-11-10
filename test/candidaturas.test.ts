@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, it, vi } from "vitest";
 import {
   actualizar,
+  borrar,
   cartaPara,
   contar,
   exportar,
@@ -43,6 +44,16 @@ describe("candidaturas", () => {
       [c?.estado, c?.notas, c?.creada, c?.actualizada],
       ["enviada", "hablé con RRHH", 1, 2],
     );
+  });
+
+  it("borra la candidatura y deja la oferta, y se puede volver a guardar", async () => {
+    await guardar(db, "a:1", 1);
+    await actualizar(db, "a:1", { notas: "vieja" }, 2);
+    await borrar(db, "a:1");
+    assert.equal(await db.candidaturas.get("a:1"), undefined);
+    assert.equal((await db.ofertas.get("a:1"))?.titulo, "Dev");
+    await guardar(db, "a:1", 3);
+    assert.equal((await db.candidaturas.get("a:1"))?.notas, "");
   });
 
   it("exporta e importa en otra base", async () => {

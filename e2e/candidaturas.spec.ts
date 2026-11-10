@@ -45,3 +45,21 @@ test("las notas se autoguardan y la carta se copia y se descarga", async ({ page
   await page.getByRole("button", { name: /Descargar carta/ }).click();
   expect((await descarga).suggestedFilename()).toMatch(/^Carta-.+\.txt$/);
 });
+
+test("quitar una candidatura pide confirmación", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Probar con datos de ejemplo" }).click();
+  await expect(page.getByText("Modo demo: los datos")).toBeVisible();
+  await page.getByRole("button", { name: "Guardar" }).first().click();
+  await page.getByRole("link", { name: "Candidaturas" }).click();
+
+  await page.getByRole("button", { name: "Quitar de la lista" }).click();
+  await page.getByRole("button", { name: "Cancelar" }).click();
+  await expect(page.getByLabel("Estado")).toHaveCount(1);
+
+  await page.getByRole("button", { name: "Quitar de la lista" }).click();
+  await page.getByRole("button", { name: "Quitar", exact: true }).click();
+  await expect(page.getByText("Aún no has guardado ninguna oferta")).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Aún no has guardado ninguna oferta")).toBeVisible();
+});
