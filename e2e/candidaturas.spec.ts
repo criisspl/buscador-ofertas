@@ -63,3 +63,18 @@ test("quitar una candidatura pide confirmación", async ({ page }) => {
   await page.reload();
   await expect(page.getByText("Aún no has guardado ninguna oferta")).toBeVisible();
 });
+
+test("los estados de seguimiento nuevos tienen su filtro", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Probar con datos de ejemplo" }).click();
+  await expect(page.getByText("Modo demo: los datos")).toBeVisible();
+  await page.getByRole("button", { name: "Guardar" }).first().click();
+  await page.getByRole("link", { name: "Candidaturas" }).click();
+
+  await page.getByLabel("Estado").selectOption({ label: "No seleccionada" });
+  await expect(page.getByRole("button", { name: /^No seleccionada 1$/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^En marcha 0$/ })).toBeVisible();
+  await page.getByRole("button", { name: /^No seleccionada 1$/ }).click();
+  await page.getByLabel("Estado").selectOption({ label: "Ya no disponible" });
+  await expect(page.getByRole("button", { name: /^Ya no disponible 1$/ })).toBeVisible();
+});
