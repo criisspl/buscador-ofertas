@@ -1,3 +1,4 @@
+import { abreFichas } from "./ayuda";
 import { expect, test } from "@playwright/test";
 
 test("filtra las candidaturas por estado y por búsqueda", async ({ page }) => {
@@ -7,6 +8,7 @@ test("filtra las candidaturas por estado y por búsqueda", async ({ page }) => {
   await page.getByRole("button", { name: "Guardar" }).nth(0).click();
   await page.getByRole("button", { name: "Guardar" }).nth(1).click();
   await page.getByRole("link", { name: "Candidaturas" }).click();
+  await abreFichas(page);
 
   await expect(page.getByRole("button", { name: /^En marcha 2$/ })).toBeVisible();
   await page.getByLabel("Estado").first().selectOption("descartada");
@@ -14,9 +16,11 @@ test("filtra las candidaturas por estado y por búsqueda", async ({ page }) => {
   await expect(page.getByLabel("Estado")).toHaveCount(1);
 
   await page.getByRole("button", { name: /^Descartada 1$/ }).click();
+  await abreFichas(page);
   await expect(page.getByLabel("Estado")).toHaveValue("descartada");
 
   await page.getByRole("button", { name: /^Todas 2$/ }).click();
+  await abreFichas(page);
   await expect(page.getByLabel("Estado")).toHaveCount(2);
   await page.getByLabel("Buscar empresa o puesto").fill("zzz-no-existe");
   await expect(page.getByText("No hay candidaturas con este filtro")).toBeVisible();
@@ -29,10 +33,12 @@ test("las notas se autoguardan y la carta se copia y se descarga", async ({ page
   await expect(page.getByText("Modo demo: los datos")).toBeVisible();
   await page.getByRole("button", { name: "Guardar" }).first().click();
   await page.getByRole("link", { name: "Candidaturas" }).click();
+  await abreFichas(page);
 
   await page.getByLabel("Notas").fill("Hablé con RRHH");
   await expect(page.getByText("Guardado", { exact: true })).toBeVisible();
   await page.reload();
+  await abreFichas(page);
   await expect(page.getByLabel("Notas")).toHaveValue("Hablé con RRHH");
 
   await expect(page.getByRole("button", { name: "Copiar carta" })).toHaveCount(0);
@@ -52,6 +58,7 @@ test("quitar una candidatura pide confirmación", async ({ page }) => {
   await expect(page.getByText("Modo demo: los datos")).toBeVisible();
   await page.getByRole("button", { name: "Guardar" }).first().click();
   await page.getByRole("link", { name: "Candidaturas" }).click();
+  await abreFichas(page);
 
   await page.getByRole("button", { name: "Quitar de la lista" }).click();
   await page.getByRole("button", { name: "Cancelar" }).click();
@@ -70,11 +77,31 @@ test("los estados de seguimiento nuevos tienen su filtro", async ({ page }) => {
   await expect(page.getByText("Modo demo: los datos")).toBeVisible();
   await page.getByRole("button", { name: "Guardar" }).first().click();
   await page.getByRole("link", { name: "Candidaturas" }).click();
+  await abreFichas(page);
 
   await page.getByLabel("Estado").selectOption({ label: "No seleccionada" });
   await expect(page.getByRole("button", { name: /^No seleccionada 1$/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /^En marcha 0$/ })).toBeVisible();
   await page.getByRole("button", { name: /^No seleccionada 1$/ }).click();
+  await abreFichas(page);
   await page.getByLabel("Estado").selectOption({ label: "Ya no disponible" });
   await expect(page.getByRole("button", { name: /^Ya no disponible 1$/ })).toBeVisible();
+});
+
+test("la ficha cerrada resume la oferta y al abrirla muestra por qué encaja", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Probar con datos de ejemplo" }).click();
+  await expect(page.getByText("Modo demo: los datos")).toBeVisible();
+  await page.getByRole("button", { name: /Puntuar 6/ }).click();
+  await expect(page.getByText(/Encaje:/)).toHaveCount(6);
+  await page.getByRole("button", { name: "Guardar" }).first().click();
+  await page.getByRole("link", { name: "Candidaturas" }).click();
+
+  const ficha = page.locator("details").first();
+  await expect(ficha.locator("summary")).toContainText(/Encaje \d+\/100/);
+  await expect(ficha.locator("summary")).toContainText("Guardada el");
+  await expect(ficha.getByText("Por qué encaja:")).toBeHidden();
+  await ficha.locator("summary").click();
+  await expect(ficha.getByText("Por qué encaja:")).toBeVisible();
+  await expect(ficha.getByRole("link", { name: "Abrir la oferta" })).toBeVisible();
 });

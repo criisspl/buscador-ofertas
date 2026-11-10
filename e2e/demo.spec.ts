@@ -1,3 +1,4 @@
+import { abreFichas } from "./ayuda";
 import { expect, test } from "@playwright/test";
 
 test("el modo demo funciona de principio a fin sin red", async ({ page }) => {
@@ -19,11 +20,13 @@ test("el modo demo funciona de principio a fin sin red", async ({ page }) => {
 
   await page.getByRole("button", { name: "Guardar" }).first().click();
   await page.getByRole("link", { name: "Candidaturas" }).click();
+  await abreFichas(page);
   await page.getByLabel("Estado").selectOption("entrevista");
   await page.getByRole("button", { name: /Escribir carta/ }).click();
   await expect(page.getByLabel("Carta de presentación")).toHaveValue(/modo demo/);
 
   await page.reload();
+  await abreFichas(page);
   await expect(page.getByLabel("Estado")).toHaveValue("entrevista");
   expect(llamadasApi).toEqual([]);
 });
