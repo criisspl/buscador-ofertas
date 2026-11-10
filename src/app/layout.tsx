@@ -5,7 +5,7 @@ import { AvisoDemo } from "./_componentes/AvisoDemo";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Buscador de ofertas",
+  title: { default: "Buscador de ofertas", template: "%s · Buscador de ofertas" },
   description:
     "Encuentra ofertas de trabajo según tu CV y tus preferencias. Tus datos se quedan en tu navegador.",
 };
