@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   actualizar,
+  borrar,
   cartaPara,
   contar,
   ESTADOS,
@@ -29,6 +30,7 @@ export default function PaginaCandidaturas() {
   const [generando, setGenerando] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("activas");
   const [busqueda, setBusqueda] = useState("");
+  const [confirmar, setConfirmar] = useState("");
   const [copiada, setCopiada] = useState("");
   const [guardado, setGuardado] = useState("");
   const temporizadores = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -63,6 +65,13 @@ export default function PaginaCandidaturas() {
     } finally {
       setGenerando("");
     }
+  };
+
+  const quita = async (id: string) => {
+    clearTimeout(temporizadores.current[id]);
+    await borrar(db, id);
+    setConfirmar("");
+    await carga();
   };
 
   const copia = async (id: string, texto: string) => {
@@ -257,6 +266,24 @@ export default function PaginaCandidaturas() {
               onClick={() => generaCarta(o)}
             >
               {generando === o.id ? "Escribiendo…" : "Escribir carta con la IA"}
+            </button>
+          )}
+          {confirmar === c.ofertaId ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span>¿Quitar esta candidatura de tu lista?</span>
+              <button className="boton-sec" onClick={() => quita(c.ofertaId)}>
+                Quitar
+              </button>
+              <button className="boton-sec" onClick={() => setConfirmar("")}>
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <button
+              className="text-bad self-start py-2 text-sm underline"
+              onClick={() => setConfirmar(c.ofertaId)}
+            >
+              Quitar de la lista
             </button>
           )}
           {!perfil && (

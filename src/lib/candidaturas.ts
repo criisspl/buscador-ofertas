@@ -81,6 +81,11 @@ export async function actualizar(
   await db.candidaturas.update(ofertaId, { ...cambios, actualizada: ahora });
 }
 
+/** Quita la candidatura de la lista. La oferta y su encaje se conservan por si se vuelve a guardar. */
+export async function borrar(db: BaseDatos, ofertaId: string) {
+  await db.candidaturas.delete(ofertaId);
+}
+
 const CopiaSchema = z.object({
   version: z.literal(1),
   ofertas: z.array(
