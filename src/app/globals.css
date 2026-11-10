@@ -79,6 +79,7 @@ body {
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 0.5rem 0.75rem;
+  min-height: 44px;
 }
 
 .boton {
@@ -86,6 +87,7 @@ body {
   color: var(--accent-ink);
   border-radius: 10px;
   padding: 0.5rem 1rem;
+  min-height: 44px;
   font-weight: 600;
 }
 .boton:disabled {
@@ -96,6 +98,7 @@ body {
   color: var(--accent);
   border-radius: 10px;
   padding: 0.5rem 1rem;
+  min-height: 44px;
   font-weight: 600;
 }
 

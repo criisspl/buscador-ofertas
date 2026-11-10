@@ -161,7 +161,7 @@ export function PaginaOfertas() {
               onChange={(e) => setUbicacion(e.target.value)}
             />
           </label>
-          <label className="flex gap-2">
+          <label className="flex min-h-11 items-center gap-2">
             <input type="checkbox" checked={remoto} onChange={(e) => setRemoto(e.target.checked)} />
             Incluir ofertas remotas
           </label>
