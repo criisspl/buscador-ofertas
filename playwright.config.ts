@@ -6,7 +6,7 @@ export default defineConfig({
   testDir: "e2e",
   workers: 1,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? "github" : "list",
+  reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: `http://localhost:${PUERTO}`,
     // En local se puede apuntar a un Chromium ya instalado: PW_CHROMIUM=/ruta/al/chrome
