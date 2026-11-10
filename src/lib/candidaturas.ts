@@ -48,6 +48,17 @@ export function filtrar(filas: Fila[], filtro: Filtro, busqueda: string): Fila[]
   );
 }
 
+/** Nombre de archivo para descargar la carta, p. ej. `Carta-Cafe-Solido.txt`. */
+export function nombreCarta(empresa?: string): string {
+  const limpio = (empresa ?? "")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/[^A-Za-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+  return `Carta-${limpio || "Empresa"}.txt`;
+}
+
 /** Guarda una oferta para seguirla. Si ya estaba, no pisa su estado ni sus notas. */
 export async function guardar(db: BaseDatos, ofertaId: string, ahora = Date.now()) {
   if (await db.candidaturas.get(ofertaId)) return;

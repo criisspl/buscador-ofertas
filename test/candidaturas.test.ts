@@ -9,6 +9,7 @@ import {
   filtrar,
   guardar,
   importar,
+  nombreCarta,
   type Fila,
 } from "../src/lib/candidaturas.ts";
 import { BaseDatos } from "../src/lib/store.ts";
@@ -121,5 +122,13 @@ describe("filtros", () => {
       ["2"],
     );
     assert.deepEqual(filtrar(filas, "descartada", "backend"), []);
+  });
+});
+
+describe("nombreCarta", () => {
+  it("limpia tildes y símbolos y tiene respaldo", () => {
+    assert.equal(nombreCarta("Café Sólido, S.L."), "Carta-Cafe-Solido-S-L.txt");
+    assert.equal(nombreCarta("¿¡?!"), "Carta-Empresa.txt");
+    assert.equal(nombreCarta(undefined), "Carta-Empresa.txt");
   });
 });
