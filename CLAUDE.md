@@ -8,9 +8,9 @@ Solo lo propio de este repo; las reglas generales y las skills vienen de [claude
 
 - Next.js 16 (App Router en `src/app/`), React 19, TypeScript, Tailwind 4. Node 22.
 - Datos de la persona (perfil, CV, ofertas, encajes, candidaturas) en IndexedDB con Dexie (`src/lib/store.ts`).
-- Rutas de servidor: `/api/ia` (intermediario con la IA: Groq y, de reserva, Mistral) y `/api/ofertas` (Adzuna, Jooble y Remotive). Límite por persona con Upstash.
+- Rutas de servidor: `/api/ia` (intermediario con la IA: Groq y, de reserva, Mistral), `/api/ofertas` (Adzuna, Jooble y Remotive), `/api/importar` (descarga una oferta por enlace, con defensa SSRF) y `/api/copia` (copia cifrada en Upstash). Límite por persona con Upstash y tope diario global en `/api/ia`.
 - Validación con zod; CV en PDF leído con `pdfjs-dist`.
-- Tests: Vitest en `test/`, con `fake-indexeddb` para el store.
+- Tests: Vitest en `test/` (con `fake-indexeddb` para el store) y e2e con Playwright en `e2e/`, proyectos `escritorio` y `movil` (390x844). Si el Chromium de Playwright no arranca en local: `PW_CHROMIUM=/ruta/a/chrome npm run e2e`.
 - Alias `@/` → `src/`.
 
 | Qué            | Comando                                      |
@@ -21,14 +21,15 @@ Solo lo propio de este repo; las reglas generales y las skills vienen de [claude
 | Tipos          | `npm run typecheck` (`next typegen` + `tsc`) |
 | Lint y formato | `npm run lint` · `npm run format`            |
 | Build          | `npm run build`                              |
+| E2E            | `npm run e2e`                                |
 
-CI ejecuta lint, `format:check`, tipos, tests y build: todo tiene que pasar antes de dar algo por hecho. El pre-commit (husky) pasa lint, formato, tipos y tests. Los commits siguen Conventional Commits (commitlint).
+CI ejecuta lint, `format:check`, tipos, tests, build y e2e: todo tiene que pasar antes de dar algo por hecho. El pre-commit (husky) pasa lint, formato, tipos y tests. Los commits siguen Conventional Commits (commitlint).
 
 ## Estructura
 
-- `src/app/`: páginas (`perfil`, `ofertas`, `ajustes`) y rutas `api/`.
-- `src/lib/`: lógica testeable. `ia/` (cliente, servidor, validación), `ofertas/fuentes.ts`, `cv/`, `encaje.ts`, `limite.ts`, `tipos.ts`.
-- `test/`: un `*.test.ts` por módulo.
+- `src/app/`: páginas (`perfil`, `ofertas`, `candidaturas`, `copia`, `ajustes`) y rutas `api/` (`ia`, `ofertas`, `importar`, `copia`). Cada `page.tsx` es Server Component con su `metadata`; el código cliente va en `<ruta>/_componentes/Pagina*.tsx`. Componentes compartidos en `src/app/_componentes/` (`Nav`, `AvisoCopia`, `AvisoDemo`, `BotonDemo`).
+- `src/lib/`: lógica testeable. `esquemas.ts` (schemas zod: de ahí salen los tipos de `tipos.ts`), `api.ts` (`json`, `mismoOrigen`, `aplicaLimite` para las rutas), `limite.ts`, `store.ts`, `useConsulta.ts` (hook `liveQuery` + `useSyncExternalStore`), `ia/`, `ofertas/fuentes.ts`, `importar/` (descarga y extracción), `nube/` (cifrado y cliente/servidor de la copia), `cv/`, `candidaturas.ts`, `copia.ts`, `encaje.ts`, `recordatorio.ts`, `demo-datos.ts`.
+- `test/`: un `*.test.ts` por módulo. `e2e/`: specs de Playwright por pantalla, más `movil.spec.ts` y `titulos.spec.ts`.
 
 ## Reglas del proyecto
 
@@ -36,7 +37,12 @@ CI ejecuta lint, `format:check`, tipos, tests y build: todo tiene que pasar ante
 - En `/api/ia` el modelo y los límites los decide el servidor, no el cliente; toda entrada pasa por `ia/valida.ts`.
 - Upstash es obligatorio en producción: sin él no hay límite por persona.
 - Dexie: cada cambio de esquema es una `version()` nueva; nunca se edita una anterior.
-- Los datos de la persona no se guardan en el servidor: solo pasan por él para llamar a la IA.
+- Los datos de la persona no se guardan en claro en el servidor: solo pasan por él para llamar a la IA o importar una oferta. La única excepción es la copia en la nube, que se cifra en el navegador (la contraseña nunca sale) y Upstash solo guarda el blob ilegible y el hash del token.
+- Páginas: `page.tsx` de servidor y `"use client"` solo en `_componentes/`. Lecturas de Dexie con `useConsulta` (la consulta se define a nivel de módulo, no dentro del componente), no con `useEffect`.
+- Tipos y validación: los tipos de datos salen de `esquemas.ts` con `z.infer`; los límites de longitud de `OfertaSchema` también se aplican al restaurar copias.
+- Rutas `api/`: usa `mismoOrigen` y `aplicaLimite` de `lib/api.ts`; el cuerpo se lee con `text()` y se valida con zod (`strictObject`) antes de usarlo.
+- Móvil y accesibilidad: botones y campos de al menos 44px de alto, mensajes con `role="status"`, nav con `aria-current`. Todo cambio de UI debe pasar el e2e `movil` (390x844).
+- Merge: el repo no tiene `--auto` ni protección de rama (plan gratuito, repo privado). Espera la CI con `gh pr checks <n>` y fusiona a mano con squash.
 - Textos de la interfaz y comentarios en español.
 - No añadas dependencias sin preguntar.
 
