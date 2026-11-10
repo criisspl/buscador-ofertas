@@ -47,38 +47,43 @@ export function PaginaAjustes() {
         La IA es necesaria para leer tu CV y puntuar ofertas. Elige cómo usarla.
       </p>
 
-      <label className="flex gap-2">
-        <input
-          type="radio"
-          checked={aj.modoIa === "app"}
-          onChange={() => cambia({ modoIa: "app" })}
-        />
-        <span>
-          <b>IA de la app</b>: el texto pasa por el servidor, que no guarda nada.
-        </span>
-      </label>
-      <label className="flex gap-2">
-        <input
-          type="radio"
-          checked={aj.modoIa === "propia"}
-          onChange={() => cambia({ modoIa: "propia" })}
-        />
-        <span>
-          <b>Mi propia clave</b>: se guarda solo en este navegador y las llamadas van directas a tu
-          proveedor.
-        </span>
-      </label>
-
-      <label className="flex gap-2">
-        <input
-          type="radio"
-          checked={aj.modoIa === "demo"}
-          onChange={() => cambia({ modoIa: "demo" })}
-        />
-        <span>
-          <b>Demo</b>: respuestas de ejemplo, sin IA real ni red. Para ver cómo funciona la app.
-        </span>
-      </label>
+      <fieldset className="space-y-4">
+        <legend className="mb-2 font-semibold">Modo de IA</legend>
+        <label className="flex gap-2">
+          <input
+            type="radio"
+            name="modoIa"
+            checked={aj.modoIa === "app"}
+            onChange={() => cambia({ modoIa: "app" })}
+          />
+          <span>
+            <b>IA de la app</b>: el texto pasa por el servidor, que no guarda nada.
+          </span>
+        </label>
+        <label className="flex gap-2">
+          <input
+            type="radio"
+            name="modoIa"
+            checked={aj.modoIa === "propia"}
+            onChange={() => cambia({ modoIa: "propia" })}
+          />
+          <span>
+            <b>Mi propia clave</b>: se guarda solo en este navegador y las llamadas van directas a
+            tu proveedor.
+          </span>
+        </label>
+        <label className="flex gap-2">
+          <input
+            type="radio"
+            name="modoIa"
+            checked={aj.modoIa === "demo"}
+            onChange={() => cambia({ modoIa: "demo" })}
+          />
+          <span>
+            <b>Demo</b>: respuestas de ejemplo, sin IA real ni red. Para ver cómo funciona la app.
+          </span>
+        </label>
+      </fieldset>
 
       {aj.modoIa === "propia" && (
         <div className="space-y-3">
@@ -119,15 +124,19 @@ export function PaginaAjustes() {
         <button className="boton-sec" disabled={probando} onClick={pruebaAhora}>
           {probando ? "Probando…" : "Probar conexión"}
         </button>
-        {guardado && <span className="text-ok">Guardado</span>}
+        <span role="status" className="text-ok">
+          {guardado && "Guardado"}
+        </span>
       </div>
-      {prueba && (
-        <p
-          className={`rounded-lg p-3 ${prueba.ok ? "bg-accent-soft text-ok" : "bg-warn-soft text-warn"}`}
-        >
-          {prueba.mensaje}
-        </p>
-      )}
+      <div role="status">
+        {prueba && (
+          <p
+            className={`rounded-lg p-3 ${prueba.ok ? "bg-accent-soft text-ok" : "bg-warn-soft text-warn"}`}
+          >
+            {prueba.mensaje}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
