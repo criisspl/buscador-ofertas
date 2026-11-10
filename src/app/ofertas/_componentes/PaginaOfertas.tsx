@@ -142,49 +142,73 @@ export function PaginaOfertas() {
     <div className="space-y-4">
       <section className="card space-y-3">
         <h1 className="text-2xl font-bold">Buscar ofertas</h1>
-        <label className="block">
-          Puesto
-          <input className="campo" value={q} onChange={(e) => setQ(e.target.value)} />
-        </label>
-        <label className="block">
-          Ubicación
-          <input
-            className="campo"
-            value={ubicacion}
-            onChange={(e) => setUbicacion(e.target.value)}
-          />
-        </label>
-        <label className="flex gap-2">
-          <input type="checkbox" checked={remoto} onChange={(e) => setRemoto(e.target.checked)} />
-          Incluir ofertas remotas
-        </label>
-        <button className="boton" disabled={cargando || !q.trim()} onClick={busca}>
-          {cargando ? "Buscando…" : "Buscar"}
-        </button>
-        {aviso && <p className="bg-warn-soft text-warn rounded-lg p-3">{aviso}</p>}
+        <form
+          className="space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!cargando && q.trim()) void busca();
+          }}
+        >
+          <label className="block">
+            Puesto
+            <input className="campo" value={q} onChange={(e) => setQ(e.target.value)} />
+          </label>
+          <label className="block">
+            Ubicación
+            <input
+              className="campo"
+              value={ubicacion}
+              onChange={(e) => setUbicacion(e.target.value)}
+            />
+          </label>
+          <label className="flex gap-2">
+            <input type="checkbox" checked={remoto} onChange={(e) => setRemoto(e.target.checked)} />
+            Incluir ofertas remotas
+          </label>
+          <button className="boton" type="submit" disabled={cargando || !q.trim()}>
+            {cargando ? "Buscando…" : "Buscar"}
+          </button>
+        </form>
+        {aviso && (
+          <p role="status" className="bg-warn-soft text-warn rounded-lg p-3">
+            {aviso}
+          </p>
+        )}
       </section>
 
       <section className="card space-y-3">
         <h2 className="font-bold">Añadir una oferta</h2>
-        <label className="block">
-          Enlace de la oferta
-          <input
-            className="campo"
-            type="url"
-            value={enlace}
-            onChange={(e) => setEnlace(e.target.value)}
-            placeholder="https://…"
-          />
-        </label>
-        <div className="flex gap-3">
-          <button className="boton" disabled={importando || !enlace.trim()} onClick={importa}>
-            {importando ? "Importando…" : "Importar"}
-          </button>
-          <button className="boton-sec" onClick={() => setManual((m) => !m)}>
-            Añadir a mano
-          </button>
-        </div>
-        {avisoImporta && <p className="bg-warn-soft text-warn rounded-lg p-3">{avisoImporta}</p>}
+        <form
+          className="space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!importando && enlace.trim()) void importa();
+          }}
+        >
+          <label className="block">
+            Enlace de la oferta
+            <input
+              className="campo"
+              type="url"
+              value={enlace}
+              onChange={(e) => setEnlace(e.target.value)}
+              placeholder="https://…"
+            />
+          </label>
+          <div className="flex gap-3">
+            <button className="boton" type="submit" disabled={importando || !enlace.trim()}>
+              {importando ? "Importando…" : "Importar"}
+            </button>
+            <button className="boton-sec" type="button" onClick={() => setManual((m) => !m)}>
+              Añadir a mano
+            </button>
+          </div>
+        </form>
+        {avisoImporta && (
+          <p role="status" className="bg-warn-soft text-warn rounded-lg p-3">
+            {avisoImporta}
+          </p>
+        )}
         {manual && (
           <div className="space-y-3">
             {(["titulo", "empresa", "url"] as const).map((k) => (

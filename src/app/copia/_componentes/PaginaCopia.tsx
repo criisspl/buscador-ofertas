@@ -103,6 +103,7 @@ export function PaginaCopia() {
         {trabajando && <p className="text-muted">Trabajando… puede tardar un par de segundos.</p>}
         {mensaje && (
           <p
+            role="status"
             className={`rounded-lg p-3 ${mensaje.ok ? "bg-ok-soft text-ok" : "bg-bad-soft text-bad"}`}
           >
             {mensaje.texto}

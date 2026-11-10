@@ -80,6 +80,7 @@ export function PaginaPerfil() {
         <h1 className="text-2xl font-bold">Tu CV</h1>
         <input
           type="file"
+          className="w-full"
           accept="application/pdf"
           aria-label="Subir CV en PDF"
           onChange={(e) => e.target.files?.[0] && leePdf(e.target.files[0])}
@@ -177,7 +178,9 @@ export function PaginaPerfil() {
           <button className="boton" onClick={guarda}>
             Guardar
           </button>
-          {guardado && <span className="text-ok">Guardado</span>}
+          <span role="status" className="text-ok">
+            {guardado && "Guardado"}
+          </span>
         </div>
       </section>
     </div>

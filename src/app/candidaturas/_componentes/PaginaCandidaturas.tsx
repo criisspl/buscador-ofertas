@@ -147,7 +147,11 @@ export function PaginaCandidaturas() {
             onChange={(e) => e.target.files?.[0] && sube(e.target.files[0])}
           />
         </label>
-        {aviso && <p className="bg-warn-soft text-warn w-full rounded-lg p-3">{aviso}</p>}
+        {aviso && (
+          <p role="status" className="bg-warn-soft text-warn w-full rounded-lg p-3">
+            {aviso}
+          </p>
+        )}
       </section>
 
       {filas.length === 0 && (
