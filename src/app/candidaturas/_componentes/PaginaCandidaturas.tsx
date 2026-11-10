@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   actualizar,
   borrar,
@@ -15,7 +15,8 @@ import {
   type Filtro,
 } from "@/lib/candidaturas";
 import { db } from "@/lib/store";
-import type { Candidatura, Oferta, Perfil } from "@/lib/tipos";
+import { useConsulta } from "@/lib/useConsulta.ts";
+import type { Candidatura, Oferta } from "@/lib/tipos";
 
 async function leeFilas(): Promise<Fila[]> {
   const cs = await db.candidaturas.orderBy("actualizada").reverse().toArray();
@@ -24,9 +25,11 @@ async function leeFilas(): Promise<Fila[]> {
   return cs.map((c, i) => ({ c, o: os[i], e: es[i] }));
 }
 
+const leePerfil = () => db.perfil.get("perfil");
+
 export function PaginaCandidaturas() {
-  const [filas, setFilas] = useState<Fila[]>([]);
-  const [perfil, setPerfil] = useState<Perfil | null>(null);
+  const filas = useConsulta(leeFilas) ?? [];
+  const perfil = useConsulta(leePerfil) ?? null;
   const [aviso, setAviso] = useState("");
   const [generando, setGenerando] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("activas");
@@ -36,19 +39,11 @@ export function PaginaCandidaturas() {
   const [guardado, setGuardado] = useState("");
   const temporizadores = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-  const carga = useCallback(() => leeFilas().then(setFilas), []);
-
-  useEffect(() => {
-    leeFilas().then(setFilas);
-    db.perfil.get("perfil").then((p) => p && setPerfil(p));
-  }, []);
-
   const cambia = async (
     id: string,
     cambios: Partial<Pick<Candidatura, "estado" | "notas" | "carta">>,
   ) => {
     await actualizar(db, id, cambios);
-    await carga();
   };
 
   const generaCarta = async (o: Oferta) => {
@@ -72,7 +67,6 @@ export function PaginaCandidaturas() {
     clearTimeout(temporizadores.current[id]);
     await borrar(db, id);
     setConfirmar("");
-    await carga();
   };
 
   const copia = async (id: string, texto: string) => {
@@ -117,7 +111,6 @@ export function PaginaCandidaturas() {
     try {
       const n = await importar(db, await f.text());
       setAviso(`Importadas ${n} candidaturas.`);
-      await carga();
     } catch (e) {
       setAviso(e instanceof Error ? e.message : "No se ha podido importar.");
     }
