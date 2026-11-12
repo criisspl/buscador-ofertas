@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ProveedorAlmacen } from "@/lib/almacen/contexto";
 import { AvisoCopia } from "./_componentes/AvisoCopia";
 import { Nav } from "./_componentes/Nav";
 import { AvisoDemo } from "./_componentes/AvisoDemo";
@@ -14,12 +15,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es" className="h-full antialiased">
       <body className="min-h-full">
-        <header className="border-line bg-surface border-b">
-          <Nav />
-        </header>
-        <AvisoDemo />
-        <AvisoCopia />
-        <main className="mx-auto max-w-3xl px-4 py-8">{children}</main>
+        <ProveedorAlmacen>
+          <header className="border-line bg-surface border-b">
+            <Nav />
+          </header>
+          <AvisoDemo />
+          <AvisoCopia />
+          <main className="mx-auto max-w-3xl px-4 py-8">{children}</main>
+        </ProveedorAlmacen>
       </body>
     </html>
   );

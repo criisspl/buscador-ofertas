@@ -1,5 +1,5 @@
 import { instantanea, restaurar } from "../copia.ts";
-import type { BaseDatos } from "../store.ts";
+import type { Almacenamiento } from "../almacen/tipos.ts";
 import { cifrar, descifrar, idDe, ITERACIONES, tokenDe, type Blob } from "./cifrado.ts";
 
 export class ErrorNube extends Error {}
@@ -23,7 +23,7 @@ async function llamar(f: Fetch, metodo: string, url: string, cuerpo?: unknown) {
 
 /** Sube una copia cifrada. Si el alias ya existe se reutiliza su sal: solo quien conoce la contraseña puede actualizarla. */
 export async function subir(
-  db: BaseDatos,
+  almacen: Almacenamiento,
   alias: string,
   password: string,
   f: Fetch = fetch,
@@ -34,7 +34,7 @@ export async function subir(
   if (previo.r.status !== 404 && !previo.r.ok)
     throw new ErrorNube(previo.datos.mensaje ?? "No se ha podido comprobar el alias.");
   const sal: string | undefined = previo.r.ok ? (previo.datos.blob as Blob).salt : undefined;
-  const blob = await cifrar(await instantanea(db), password, sal, iteraciones);
+  const blob = await cifrar(await instantanea(almacen), password, sal, iteraciones);
   const token = await tokenDe(password, blob.salt, iteraciones);
   const { r, datos } = await llamar(f, "PUT", "/api/copia", { id, token, blob });
   if (!r.ok) throw new ErrorNube(datos.mensaje ?? "No se ha podido guardar la copia.");
@@ -42,7 +42,7 @@ export async function subir(
 }
 
 export async function bajar(
-  db: BaseDatos,
+  almacen: Almacenamiento,
   alias: string,
   password: string,
   f: Fetch = fetch,
@@ -50,7 +50,7 @@ export async function bajar(
 ) {
   const { r, datos } = await llamar(f, "GET", `/api/copia?id=${await idDe(alias)}`);
   if (!r.ok) throw new ErrorNube(datos.mensaje ?? "No se ha podido recuperar la copia.");
-  await restaurar(db, await descifrar(datos.blob as Blob, password, iteraciones));
+  await restaurar(almacen, await descifrar(datos.blob as Blob, password, iteraciones));
   return datos.actualizada as number;
 }
 

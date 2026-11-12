@@ -13,7 +13,7 @@ import {
   type Almacen,
   type Registro,
 } from "../src/lib/nube/servidor.ts";
-import { BaseDatos } from "../src/lib/store.ts";
+import { AlmacenDexie, BaseDatos } from "../src/lib/almacen/dexie.ts";
 
 const IT = 1000; // pocas iteraciones: aquí se prueba la lógica, no el coste de PBKDF2
 
@@ -127,9 +127,11 @@ describe("servidor", () => {
 
 describe("subir y bajar", () => {
   let db: BaseDatos;
+  let almacen: AlmacenDexie;
   beforeEach(async () => {
     db = new BaseDatos(`test-${Math.random()}`);
     await db.open();
+    almacen = new AlmacenDexie(db);
     await db.perfil.put({
       id: "perfil",
       skills: ["React"],
@@ -141,38 +143,38 @@ describe("subir y bajar", () => {
   });
 
   it("la copia no incluye los ajustes ni la clave de IA", async () => {
-    assert.ok(!(await instantanea(db)).includes("sk-no-subir"));
+    assert.ok(!(await instantanea(almacen)).includes("sk-no-subir"));
   });
 
   it("sube y recupera en otro navegador con alias y contraseña", async () => {
     const a = memoria();
     const f = servidor(a);
-    await subir(db, "cris", "mi-contraseña", f, IT);
+    await subir(almacen, "cris", "mi-contraseña", f, IT);
     assert.ok(!JSON.stringify([...a.datos.values()]).includes("React"));
     const otro = new BaseDatos(`test-${Math.random()}`);
     await otro.open();
-    await bajar(otro, "Cris", "mi-contraseña", f, IT);
+    await bajar(new AlmacenDexie(otro), "Cris", "mi-contraseña", f, IT);
     assert.deepEqual((await otro.perfil.get("perfil"))?.skills, ["React"]);
   });
   it("actualizar con la misma contraseña funciona; con otra, no", async () => {
     const f = servidor(memoria());
-    await subir(db, "cris", "uno", f, IT);
-    await subir(db, "cris", "uno", f, IT);
-    await assert.rejects(subir(db, "cris", "otra", f, IT), ErrorNube);
+    await subir(almacen, "cris", "uno", f, IT);
+    await subir(almacen, "cris", "uno", f, IT);
+    await assert.rejects(subir(almacen, "cris", "otra", f, IT), ErrorNube);
   });
   it("recuperar con contraseña incorrecta no toca los datos locales", async () => {
     const f = servidor(memoria());
-    await subir(db, "cris", "uno", f, IT);
+    await subir(almacen, "cris", "uno", f, IT);
     const otro = new BaseDatos(`test-${Math.random()}`);
     await otro.open();
-    await assert.rejects(bajar(otro, "cris", "dos", f, IT), ErrorDescifrado);
+    await assert.rejects(bajar(new AlmacenDexie(otro), "cris", "dos", f, IT), ErrorDescifrado);
     assert.equal(await otro.perfil.count(), 0);
   });
   it("borra la copia con la contraseña correcta", async () => {
     const f = servidor(memoria());
-    await subir(db, "cris", "uno", f, IT);
+    await subir(almacen, "cris", "uno", f, IT);
     await assert.rejects(borrarCopia("cris", "mal", f, IT), ErrorNube);
     await borrarCopia("cris", "uno", f, IT);
-    await assert.rejects(bajar(db, "cris", "uno", f, IT), ErrorNube);
+    await assert.rejects(bajar(almacen, "cris", "uno", f, IT), ErrorNube);
   });
 });

@@ -13,7 +13,7 @@ import {
   nombreCarta,
   type Fila,
 } from "../src/lib/candidaturas.ts";
-import { BaseDatos } from "../src/lib/store.ts";
+import { AlmacenDexie, BaseDatos } from "../src/lib/almacen/dexie.ts";
 import type { Oferta } from "../src/lib/tipos.ts";
 
 const oferta: Oferta = {
@@ -28,17 +28,19 @@ const oferta: Oferta = {
 };
 
 let db: BaseDatos;
+let almacen: AlmacenDexie;
 beforeEach(async () => {
   db = new BaseDatos(`test-${Math.random()}`);
   await db.open();
+  almacen = new AlmacenDexie(db);
   await db.ofertas.put(oferta);
 });
 
 describe("candidaturas", () => {
   it("guarda una vez y no pisa el estado al volver a guardar", async () => {
-    await guardar(db, "a:1", 1);
-    await actualizar(db, "a:1", { estado: "enviada", notas: "hablé con RRHH" }, 2);
-    await guardar(db, "a:1", 3);
+    await guardar(almacen, "a:1", 1);
+    await actualizar(almacen, "a:1", { estado: "enviada", notas: "hablé con RRHH" }, 2);
+    await guardar(almacen, "a:1", 3);
     const c = await db.candidaturas.get("a:1");
     assert.deepEqual(
       [c?.estado, c?.notas, c?.creada, c?.actualizada],
@@ -47,22 +49,22 @@ describe("candidaturas", () => {
   });
 
   it("borra la candidatura y deja la oferta, y se puede volver a guardar", async () => {
-    await guardar(db, "a:1", 1);
-    await actualizar(db, "a:1", { notas: "vieja" }, 2);
-    await borrar(db, "a:1");
+    await guardar(almacen, "a:1", 1);
+    await actualizar(almacen, "a:1", { notas: "vieja" }, 2);
+    await borrar(almacen, "a:1");
     assert.equal(await db.candidaturas.get("a:1"), undefined);
     assert.equal((await db.ofertas.get("a:1"))?.titulo, "Dev");
-    await guardar(db, "a:1", 3);
+    await guardar(almacen, "a:1", 3);
     assert.equal((await db.candidaturas.get("a:1"))?.notas, "");
   });
 
   it("los estados nuevos se guardan, cuentan como en marcha o no, y viajan en la copia", async () => {
-    await guardar(db, "a:1", 1);
-    await actualizar(db, "a:1", { estado: "contacto" }, 2);
-    const copia = await exportar(db);
+    await guardar(almacen, "a:1", 1);
+    await actualizar(almacen, "a:1", { estado: "contacto" }, 2);
+    const copia = await exportar(almacen);
     const otra = new BaseDatos(`test-${Math.random()}`);
     await otra.open();
-    await importar(otra, copia);
+    await importar(new AlmacenDexie(otra), copia);
     const c = (await otra.candidaturas.get("a:1"))!;
     assert.equal(c.estado, "contacto");
     const filas = [
@@ -75,11 +77,11 @@ describe("candidaturas", () => {
   });
 
   it("exporta e importa en otra base", async () => {
-    await guardar(db, "a:1", 1);
-    const copia = await exportar(db);
+    await guardar(almacen, "a:1", 1);
+    const copia = await exportar(almacen);
     const otra = new BaseDatos(`test-${Math.random()}`);
     await otra.open();
-    assert.equal(await importar(otra, copia), 1);
+    assert.equal(await importar(new AlmacenDexie(otra), copia), 1);
     assert.equal((await otra.ofertas.get("a:1"))?.titulo, "Dev");
     assert.equal((await otra.candidaturas.get("a:1"))?.estado, "guardada");
   });
@@ -94,7 +96,7 @@ describe("candidaturas", () => {
         candidaturas: [],
       }),
     ])
-      await assert.rejects(importar(db, malo), /copia válida/);
+      await assert.rejects(importar(almacen, malo), /copia válida/);
     assert.equal(await db.candidaturas.count(), 0);
   });
 });

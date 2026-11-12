@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useAlmacen } from "@/lib/almacen/contexto";
+import type { Almacenamiento } from "@/lib/almacen/tipos";
 import {
   actualizar,
   borrar,
@@ -14,20 +16,20 @@ import {
   type Fila,
   type Filtro,
 } from "@/lib/candidaturas";
-import { db } from "@/lib/store";
 import { useConsulta } from "@/lib/useConsulta.ts";
 import type { Candidatura, Oferta } from "@/lib/tipos";
 
-async function leeFilas(): Promise<Fila[]> {
-  const cs = await db.candidaturas.orderBy("actualizada").reverse().toArray();
+async function leeFilas(a: Almacenamiento): Promise<Fila[]> {
+  const cs = await a.listarCandidaturasRecientes();
   const ids = cs.map((c) => c.ofertaId);
-  const [os, es] = await Promise.all([db.ofertas.bulkGet(ids), db.encajes.bulkGet(ids)]);
+  const [os, es] = await Promise.all([a.obtenerOfertas(ids), a.obtenerEncajes(ids)]);
   return cs.map((c, i) => ({ c, o: os[i], e: es[i] }));
 }
 
-const leePerfil = () => db.perfil.get("perfil");
+const leePerfil = (a: Almacenamiento) => a.leerPerfil();
 
 export function PaginaCandidaturas() {
+  const almacen = useAlmacen();
   const filas = useConsulta(leeFilas) ?? [];
   const perfil = useConsulta(leePerfil) ?? null;
   const [aviso, setAviso] = useState("");
@@ -43,7 +45,7 @@ export function PaginaCandidaturas() {
     id: string,
     cambios: Partial<Pick<Candidatura, "estado" | "notas" | "carta">>,
   ) => {
-    await actualizar(db, id, cambios);
+    await actualizar(almacen, id, cambios);
   };
 
   const generaCarta = async (o: Oferta) => {
@@ -51,7 +53,7 @@ export function PaginaCandidaturas() {
     setGenerando(o.id);
     setAviso("");
     try {
-      const ajustes = (await db.ajustes.get("ajustes")) ?? {
+      const ajustes = (await almacen.leerAjustes()) ?? {
         id: "ajustes" as const,
         modoIa: "app" as const,
       };
@@ -65,7 +67,7 @@ export function PaginaCandidaturas() {
 
   const quita = async (id: string) => {
     clearTimeout(temporizadores.current[id]);
-    await borrar(db, id);
+    await borrar(almacen, id);
     setConfirmar("");
   };
 
@@ -98,7 +100,9 @@ export function PaginaCandidaturas() {
   };
 
   const descarga = async () => {
-    const url = URL.createObjectURL(new Blob([await exportar(db)], { type: "application/json" }));
+    const url = URL.createObjectURL(
+      new Blob([await exportar(almacen)], { type: "application/json" }),
+    );
     const a = Object.assign(document.createElement("a"), {
       href: url,
       download: "candidaturas.json",
@@ -109,7 +113,7 @@ export function PaginaCandidaturas() {
 
   const sube = async (f: File) => {
     try {
-      const n = await importar(db, await f.text());
+      const n = await importar(almacen, await f.text());
       setAviso(`Importadas ${n} candidaturas.`);
     } catch (e) {
       setAviso(e instanceof Error ? e.message : "No se ha podido importar.");

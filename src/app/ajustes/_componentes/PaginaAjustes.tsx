@@ -1,21 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAlmacen } from "@/lib/almacen/contexto";
 import { probarConexion, type ResultadoPrueba } from "@/lib/ia/prueba";
-import { db } from "@/lib/store";
 import type { Ajustes } from "@/lib/tipos";
 
 const VACIOS: Ajustes = { id: "ajustes", modoIa: "app" };
 
 export function PaginaAjustes() {
+  const almacen = useAlmacen();
   const [aj, setAj] = useState<Ajustes>(VACIOS);
   const [guardado, setGuardado] = useState(false);
   const [probando, setProbando] = useState(false);
   const [prueba, setPrueba] = useState<ResultadoPrueba | null>(null);
 
   useEffect(() => {
-    db.ajustes.get("ajustes").then((a) => a && setAj(a));
-  }, []);
+    almacen.leerAjustes().then((a) => a && setAj(a));
+  }, [almacen]);
 
   const cambia = (parcial: Partial<Ajustes>) => {
     setAj({ ...aj, ...parcial });
@@ -24,7 +25,7 @@ export function PaginaAjustes() {
   };
 
   const guarda = async () => {
-    await db.ajustes.put(aj);
+    await almacen.guardarAjustes(aj);
     setGuardado(true);
   };
 

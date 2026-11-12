@@ -1,13 +1,16 @@
 import "fake-indexeddb/auto";
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it, vi } from "vitest";
-import { BaseDatos } from "../src/lib/store.ts";
+import { AlmacenDexie, BaseDatos } from "../src/lib/almacen/dexie.ts";
+import type { Almacenamiento } from "../src/lib/almacen/tipos.ts";
 import { crearConsulta } from "../src/lib/useConsulta.ts";
 
 let db: BaseDatos;
+let almacen: AlmacenDexie;
 beforeEach(async () => {
   db = new BaseDatos(`test-${Math.random()}`);
   await db.open();
+  almacen = new AlmacenDexie(db);
 });
 afterEach(() => db.delete());
 
@@ -24,7 +27,7 @@ const oferta = {
 
 describe("crearConsulta", () => {
   it("vale undefined al principio y emite el valor al cargar", async () => {
-    const c = crearConsulta(() => db.ofertas.count());
+    const c = crearConsulta(almacen, (a) => a.listarOfertas().then((l) => l.length));
     assert.equal(c.getSnapshot(), undefined);
     const baja = c.subscribe(() => {});
     await vi.waitFor(() => assert.equal(c.getSnapshot(), 0));
@@ -32,7 +35,7 @@ describe("crearConsulta", () => {
   });
 
   it("se actualiza al cambiar los datos, avisa y el snapshot es estable", async () => {
-    const c = crearConsulta(() => db.ofertas.toArray());
+    const c = crearConsulta(almacen, (a) => a.listarOfertas());
     const avisar = vi.fn();
     const baja = c.subscribe(avisar);
     await vi.waitFor(() => assert.deepEqual(c.getSnapshot(), []));
@@ -45,8 +48,8 @@ describe("crearConsulta", () => {
   });
 
   it("deja de escuchar al darse de baja el último", async () => {
-    const consulta = vi.fn(() => db.ofertas.count());
-    const c = crearConsulta(consulta);
+    const consulta = vi.fn((a: Almacenamiento) => a.listarOfertas().then((l) => l.length));
+    const c = crearConsulta(almacen, consulta);
     const baja = c.subscribe(() => {});
     await vi.waitFor(() => assert.equal(consulta.mock.calls.length, 1));
     baja();

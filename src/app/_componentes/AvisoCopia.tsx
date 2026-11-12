@@ -3,14 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { hayDatos } from "@/lib/demo-datos";
+import type { Almacenamiento } from "@/lib/almacen/tipos";
 import { pedirPersistencia, posponer, tocaRecordar } from "@/lib/recordatorio";
-import { db } from "@/lib/store";
 import { useConsulta } from "@/lib/useConsulta.ts";
 
-const hayAlgoQuePerder = async () => {
-  const demo = (await db.ajustes.get("ajustes"))?.modoIa === "demo";
-  return !demo && (await hayDatos(db));
+const hayAlgoQuePerder = async (almacen: Almacenamiento) => {
+  const demo = (await almacen.leerAjustes())?.modoIa === "demo";
+  return !demo && (await almacen.hayDatos());
 };
 
 // Las fechas viven en localStorage, que no avisa de cambios: se vuelve a mirar en cada render.

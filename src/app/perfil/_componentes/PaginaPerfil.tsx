@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useAlmacen } from "@/lib/almacen/contexto";
+import type { Almacenamiento } from "@/lib/almacen/tipos";
 import { ErrorCv, extraerTextoPdf } from "@/lib/cv/texto";
 import { perfilDesdeCv } from "@/lib/cv/perfil";
 import { ErrorIa } from "@/lib/ia/cliente";
-import { db } from "@/lib/store";
 import { useConsulta } from "@/lib/useConsulta.ts";
 import type { Ajustes, Perfil, Preferencias } from "@/lib/tipos";
 
@@ -21,10 +22,11 @@ const lista = (t: string) =>
     .map((s) => s.trim())
     .filter(Boolean);
 
-const leePerfil = () => db.perfil.get("perfil");
-const leePrefs = () => db.preferencias.get("preferencias");
+const leePerfil = (a: Almacenamiento) => a.leerPerfil();
+const leePrefs = (a: Almacenamiento) => a.leerPreferencias();
 
 export function PaginaPerfil() {
+  const almacen = useAlmacen();
   // Lo guardado llega de Dexie; `*Editad*` guarda lo que la persona va tocando sin guardar.
   const guardadoPerfil = useConsulta(leePerfil);
   const guardadoPrefs = useConsulta(leePrefs);
@@ -53,7 +55,7 @@ export function PaginaPerfil() {
     setCargando(true);
     setError("");
     try {
-      const aj: Ajustes = (await db.ajustes.get("ajustes")) ?? { id: "ajustes", modoIa: "app" };
+      const aj: Ajustes = (await almacen.leerAjustes()) ?? { id: "ajustes", modoIa: "app" };
       setPerfil(await perfilDesdeCv(textoPendiente, aj));
       setTextoPendiente(null);
     } catch (e) {
@@ -64,8 +66,8 @@ export function PaginaPerfil() {
   };
 
   const guarda = async () => {
-    if (perfil) await db.perfil.put(perfil);
-    await db.preferencias.put(prefs);
+    if (perfil) await almacen.guardarPerfil(perfil);
+    await almacen.guardarPreferencias(prefs);
     setGuardado(true);
   };
 

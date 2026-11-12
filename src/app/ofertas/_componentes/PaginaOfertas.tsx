@@ -1,22 +1,24 @@
 "use client";
 
 import { useState } from "react";
+import { useAlmacen } from "@/lib/almacen/contexto";
+import type { Almacenamiento } from "@/lib/almacen/tipos";
 import { guardar } from "@/lib/candidaturas";
 import { pasaFiltro, puntuar } from "@/lib/encaje";
-import { borrarOfertasNoGuardadas, db } from "@/lib/store";
 import type { Encaje, Oferta } from "@/lib/tipos";
 import { useConsulta } from "@/lib/useConsulta.ts";
 
-const leeOfertas = () => db.ofertas.toArray();
-const leePerfil = () => db.perfil.get("perfil");
-const leePrefs = () => db.preferencias.get("preferencias");
-const leeEncajes = async () => {
-  const l = await db.encajes.toArray();
+const leeOfertas = (a: Almacenamiento) => a.listarOfertas();
+const leePerfil = (a: Almacenamiento) => a.leerPerfil();
+const leePrefs = (a: Almacenamiento) => a.leerPreferencias();
+const leeEncajes = async (a: Almacenamiento) => {
+  const l = await a.listarEncajes();
   return Object.fromEntries(l.map((e) => [e.ofertaId, e])) as Record<string, Encaje>;
 };
-const leeGuardadas = async () => new Set(await db.candidaturas.toCollection().primaryKeys());
+const leeGuardadas = async (a: Almacenamiento) => new Set(await a.idsCandidaturas());
 
 export function PaginaOfertas() {
+  const almacen = useAlmacen();
   const almacenadas = useConsulta(leeOfertas);
   const perfil = useConsulta(leePerfil) ?? null;
   const prefs = useConsulta(leePrefs) ?? null;
@@ -50,7 +52,7 @@ export function PaginaOfertas() {
       const r = await fetch(`/api/ofertas?${params}`);
       const d = await r.json();
       if (!r.ok) throw new Error(d.mensaje ?? "No se ha podido buscar.");
-      await db.ofertas.bulkPut(d.ofertas);
+      await almacen.guardarOfertas(d.ofertas);
       setIdsMostrados(new Set(d.ofertas.map((x: Oferta) => x.id)));
       if (d.fallos.length) setAviso(`No han respondido: ${d.fallos.join(", ")}.`);
       else if (!d.ofertas.length) setAviso("Sin resultados. Prueba con otro puesto.");
@@ -62,7 +64,7 @@ export function PaginaOfertas() {
   };
 
   const añade = async (o: Oferta) => {
-    await db.ofertas.put(o);
+    await almacen.guardarOferta(o);
     setIdsMostrados((ids) => ids && new Set(ids).add(o.id));
   };
 
@@ -118,13 +120,13 @@ export function PaginaOfertas() {
     setPuntuando(true);
     setAviso("");
     try {
-      const ajustes = (await db.ajustes.get("ajustes")) ?? {
+      const ajustes = (await almacen.leerAjustes()) ?? {
         id: "ajustes" as const,
         modoIa: "app" as const,
       };
       for (const o of lista) {
         const e = await puntuar(o, perfil, prefs, ajustes);
-        await db.encajes.put(e);
+        await almacen.guardarEncaje(e);
       }
     } catch (e) {
       setAviso(e instanceof Error ? e.message : "No se ha podido puntuar.");
@@ -141,7 +143,7 @@ export function PaginaOfertas() {
 
   const limpia = async () => {
     if (!confirm(`¿Borrar ${sinGuardar} ofertas no guardadas? Las guardadas no se tocan.`)) return;
-    const n = await borrarOfertasNoGuardadas();
+    const n = await almacen.borrarOfertasNoGuardadas();
     setAvisoLimpieza(`Se han borrado ${n} ofertas`);
   };
 
@@ -311,7 +313,7 @@ export function PaginaOfertas() {
               className="boton-sec"
               disabled={guardadas.has(o.id)}
               onClick={async () => {
-                await guardar(db, o.id);
+                await guardar(almacen, o.id);
               }}
             >
               {guardadas.has(o.id) ? "Guardada" : "Guardar"}

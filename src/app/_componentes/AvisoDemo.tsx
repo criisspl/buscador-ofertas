@@ -1,9 +1,10 @@
 "use client";
 
-import { db } from "@/lib/store";
+import type { Almacenamiento } from "@/lib/almacen/tipos";
 import { useConsulta } from "@/lib/useConsulta.ts";
 
-const modoDemo = async () => (await db.ajustes.get("ajustes"))?.modoIa === "demo";
+const modoDemo = async (almacen: Almacenamiento) =>
+  (await almacen.leerAjustes())?.modoIa === "demo";
 
 export function AvisoDemo() {
   const demo = useConsulta(modoDemo);
