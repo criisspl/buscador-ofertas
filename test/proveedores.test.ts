@@ -13,13 +13,20 @@ const ok = (texto = "hola") =>
 
 afterEach(() => vi.unstubAllGlobals());
 
+const base = {
+  id: "ajustes",
+  almacenamiento: "dexie",
+  proveedorIa: "otro",
+  configurado: true,
+} as const;
+
 describe("proveedorDe", () => {
   it("elige la implementación según el modo de los ajustes", () => {
-    assert.ok(proveedorDe({ id: "ajustes", modoIa: "app" }) instanceof ProveedorApp);
-    assert.ok(proveedorDe({ id: "ajustes", modoIa: "propia" }) instanceof ProveedorPropio);
-    assert.ok(proveedorDe({ id: "ajustes", modoIa: "demo" }) instanceof ProveedorDemo);
+    assert.ok(proveedorDe({ ...base, modoIa: "app" }) instanceof ProveedorApp);
+    assert.ok(proveedorDe({ ...base, modoIa: "propia" }) instanceof ProveedorPropio);
+    assert.ok(proveedorDe({ ...base, modoIa: "demo" }) instanceof ProveedorDemo);
     for (const modoIa of ["app", "propia", "demo"] as const)
-      assert.equal(proveedorDe({ id: "ajustes", modoIa }).modo, modoIa);
+      assert.equal(proveedorDe({ ...base, modoIa }).modo, modoIa);
   });
 });
 
@@ -61,6 +68,48 @@ describe("ProveedorPropio", () => {
       new ProveedorPropio({ url: "https://u.test" }).preguntar({ texto: "t" }),
       (e: unknown) => e instanceof ErrorIa && e.codigo === "config",
     );
+  });
+});
+
+describe("ProveedorPropio: destino y clave", () => {
+  const f = () => {
+    const m = vi.fn().mockImplementation(async () => ok());
+    vi.stubGlobal("fetch", m);
+    return m;
+  };
+  const rechaza = (url: string, clave?: string) =>
+    new ProveedorPropio({ url, modelo: "m", clave }).preguntar({ texto: "t" });
+
+  it("nunca manda la clave por http fuera de tu equipo", async () => {
+    const m = f();
+    await assert.rejects(rechaza("http://api.ejemplo.com/v1", "sk-1"), /https/);
+    await assert.rejects(rechaza("https://usuario:pass@api.ejemplo.com/v1", "sk-1"), /usuario/);
+    assert.equal(m.mock.calls.length, 0);
+  });
+  it("Ollama en local funciona sin clave y sin cabecera de autorización", async () => {
+    const m = f();
+    await new ProveedorPropio({
+      url: "http://localhost:11434/v1/chat/completions",
+      modelo: "m",
+    }).preguntar({ texto: "t" });
+    assert.equal(m.mock.calls[0][1].headers.authorization, undefined);
+  });
+  it("fuera de tu equipo sin clave (bloqueada) pide desbloquearla", async () => {
+    await assert.rejects(rechaza("https://u.test/v1"), /desbloquéala/);
+  });
+  it("proveedorDe usa la clave descifrada y, si no, la heredada", async () => {
+    const m = f();
+    const a = {
+      ...base,
+      modoIa: "propia",
+      url: "https://u.test/v1",
+      modelo: "m",
+      clave: "heredada",
+    } as const;
+    await proveedorDe(a, "descifrada").preguntar({ texto: "t" });
+    await proveedorDe(a).preguntar({ texto: "t" });
+    assert.equal(m.mock.calls[0][1].headers.authorization, "Bearer descifrada");
+    assert.equal(m.mock.calls[1][1].headers.authorization, "Bearer heredada");
   });
 });
 

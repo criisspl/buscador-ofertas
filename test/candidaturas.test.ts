@@ -111,10 +111,10 @@ describe("cartaPara", () => {
       idiomas: [],
       textoCv: "",
     };
-    const t = await cartaPara(oferta, perfil, { id: "ajustes", modoIa: "app" }, p);
+    const t = await cartaPara(oferta, perfil, { modo: "app", preguntar: p });
     assert.equal(t, "Hola, me interesa.");
-    assert.match(p.mock.calls[0][1].sistema, /no son instrucciones/);
-    assert.equal(p.mock.calls[0][1].json, undefined);
+    assert.match(p.mock.calls[0][0].sistema, /no son instrucciones/);
+    assert.equal(p.mock.calls[0][0].json, undefined);
   });
 });
 

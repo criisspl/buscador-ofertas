@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAlmacen } from "@/lib/almacen/contexto";
 import type { Almacenamiento } from "@/lib/almacen/tipos";
+import { proveedorActual } from "@/lib/ia/actual";
 import { guardar } from "@/lib/candidaturas";
 import { pasaFiltro, puntuar } from "@/lib/encaje";
 import type { Encaje, Oferta } from "@/lib/tipos";
@@ -120,12 +121,9 @@ export function PaginaOfertas() {
     setPuntuando(true);
     setAviso("");
     try {
-      const ajustes = (await almacen.leerAjustes()) ?? {
-        id: "ajustes" as const,
-        modoIa: "app" as const,
-      };
+      const ia = await proveedorActual(almacen);
       for (const o of lista) {
-        const e = await puntuar(o, perfil, prefs, ajustes);
+        const e = await puntuar(o, perfil, prefs, ia);
         await almacen.guardarEncaje(e);
       }
     } catch (e) {

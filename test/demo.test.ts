@@ -5,7 +5,7 @@ import { cargarDemo, OFERTAS_DEMO } from "../src/lib/demo-datos.ts";
 import { perfilDesdeCv } from "../src/lib/cv/perfil.ts";
 import { cartaPara } from "../src/lib/candidaturas.ts";
 import { puntuar } from "../src/lib/encaje.ts";
-import { preguntar } from "../src/lib/ia/cliente.ts";
+import { proveedorDe } from "../src/lib/ia/proveedores.ts";
 import { AlmacenDexie, BaseDatos } from "../src/lib/almacen/dexie.ts";
 
 let db: BaseDatos;
@@ -33,11 +33,11 @@ describe("modo demo", () => {
     try {
       await cargarDemo(almacen);
       const aj = (await db.ajustes.get("ajustes"))!;
-      const perfil = await perfilDesdeCv("cualquier texto", aj);
+      const perfil = await perfilDesdeCv("cualquier texto", proveedorDe(aj));
       assert.ok(perfil.skills.length > 0);
-      const carta = await cartaPara(OFERTAS_DEMO[0], perfil, aj);
+      const carta = await cartaPara(OFERTAS_DEMO[0], perfil, proveedorDe(aj));
       assert.match(carta, /modo demo/);
-      assert.equal(typeof (await preguntar(aj, { texto: "x" })), "string");
+      assert.equal(typeof (await proveedorDe(aj).preguntar({ texto: "x" })), "string");
     } finally {
       globalThis.fetch = original;
     }
@@ -48,7 +48,9 @@ describe("modo demo", () => {
     const aj = (await db.ajustes.get("ajustes"))!;
     const perfil = (await db.perfil.get("perfil"))!;
     const prefs = (await db.preferencias.get("preferencias"))!;
-    const notas = await Promise.all(OFERTAS_DEMO.map((o) => puntuar(o, perfil, prefs, aj)));
+    const notas = await Promise.all(
+      OFERTAS_DEMO.map((o) => puntuar(o, perfil, prefs, proveedorDe(aj))),
+    );
     const porId = Object.fromEntries(notas.map((e) => [e.ofertaId, e]));
     assert.ok(
       porId["demo:6"].nota > porId["demo:2"].nota,

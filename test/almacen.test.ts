@@ -56,6 +56,9 @@ function contratoAlmacenamiento(nombre: string, crear: () => Promise<Almacenamie
     it("guarda y lee ajustes, perfil y preferencias", async () => {
       const ajustes = {
         id: "ajustes",
+        almacenamiento: "dexie",
+        proveedorIa: "otro",
+        configurado: true,
         modoIa: "propia",
         url: "https://u.test",
         modelo: "m",
@@ -153,7 +156,13 @@ function contratoAlmacenamiento(nombre: string, crear: () => Promise<Almacenamie
     });
 
     it("escribirLote guarda todo lo que se da y deja el resto como estaba", async () => {
-      await a.guardarAjustes({ id: "ajustes", modoIa: "demo" });
+      await a.guardarAjustes({
+        id: "ajustes",
+        almacenamiento: "dexie",
+        proveedorIa: "otro",
+        configurado: true,
+        modoIa: "demo",
+      });
       await a.escribirLote({
         ofertas: [oferta("a")],
         encajes: [encaje("a")],
@@ -175,7 +184,14 @@ function contratoAlmacenamiento(nombre: string, crear: () => Promise<Almacenamie
     });
 
     it("leerDatos devuelve todo menos los ajustes", async () => {
-      await a.guardarAjustes({ id: "ajustes", modoIa: "propia", clave: "sk-secreta" });
+      await a.guardarAjustes({
+        id: "ajustes",
+        almacenamiento: "dexie",
+        proveedorIa: "otro",
+        configurado: true,
+        modoIa: "propia",
+        clave: "sk-secreta",
+      });
       await a.escribirLote({ ofertas: [oferta("a")], candidaturas: [candidatura("a")] });
       const datos = await a.leerDatos();
       assert.equal(datos.ofertas.length, 1);
@@ -221,11 +237,11 @@ contratoAlmacenamiento("Dexie (IndexedDB)", async () => {
 });
 
 describe("AlmacenDexie: esquema", () => {
-  it("no toca el esquema: versión 1 y las mismas tablas", async () => {
+  it("las tablas son las mismas; la versión 2 solo completa los ajustes", async () => {
     const base = new BaseDatos(`test-${Math.random()}`);
     bases.push(base);
     await new AlmacenDexie(base).borrarOfertasNoGuardadas();
-    assert.equal(base.verno, 1);
+    assert.equal(base.verno, 2);
     assert.deepEqual(base.tables.map((t) => t.name).sort(), [
       "ajustes",
       "candidaturas",

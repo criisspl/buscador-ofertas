@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it, vi } from "vitest";
 import { POST } from "../src/app/api/ia/route.ts";
-import { ErrorIa, preguntar } from "../src/lib/ia/cliente.ts";
+import { ErrorIa } from "../src/lib/ia/cliente.ts";
+import { proveedorDe } from "../src/lib/ia/proveedores.ts";
+import type { Pregunta } from "../src/lib/ia/tipos.ts";
+import type { Ajustes } from "../src/lib/tipos.ts";
 import { llamarProveedores, type Proveedor } from "../src/lib/ia/servidor.ts";
 import { valida } from "../src/lib/ia/valida.ts";
 
@@ -120,9 +123,16 @@ describe("POST /api/ia", () => {
 });
 
 describe("preguntar", () => {
-  const app = { id: "ajustes", modoIa: "app" } as const;
-  const propia = {
+  const preguntar = (a: Ajustes, p: Pregunta) => proveedorDe(a).preguntar(p);
+  const base = {
     id: "ajustes",
+    almacenamiento: "dexie",
+    proveedorIa: "otro",
+    configurado: true,
+  } as const;
+  const app = { ...base, modoIa: "app" } as const;
+  const propia = {
+    ...base,
     modoIa: "propia",
     url: "https://x.test/v1",
     modelo: "m",
@@ -160,7 +170,7 @@ describe("preguntar", () => {
   });
   it("avisa si faltan datos de la IA propia", async () => {
     await assert.rejects(
-      preguntar({ id: "ajustes", modoIa: "propia" }, { texto: "x" }),
+      preguntar({ ...base, modoIa: "propia" }, { texto: "x" }),
       (e: ErrorIa) => e.codigo === "config",
     );
   });

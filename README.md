@@ -4,7 +4,7 @@ Sube tu CV, cuéntale qué buscas y la IA puntúa las ofertas de trabajo según 
 
 ## Qué hace
 
-1. **Ajustes**: eliges la IA. O la de la app (Groq, con Mistral de reserva) o tu propia clave de cualquier API compatible con OpenAI. Un botón «Probar conexión» comprueba que funciona y explica el fallo (clave, cupo, modelo, CORS).
+1. **Ajustes**: la primera vez, un asistente propone la configuración sugerida (datos en este navegador con IndexedDB e IA de la app) o te deja personalizarla. Puedes usar la IA de la app (Groq, con Mistral de reserva) o tu propia IA: Groq, Mistral, OpenAI, Ollama en tu equipo u otra API compatible con OpenAI, con la dirección y el modelo editables. Un botón «Probar conexión» comprueba que funciona y explica el fallo (clave, cupo, modelo, CORS).
 2. **Perfil**: subes tu CV en PDF. El texto se extrae en el navegador, y solo se envía a la IA después de que aceptes. Revisas y corriges el perfil resultante y fijas tus preferencias (puestos, ubicación, remoto, sectores a evitar).
 3. **Ofertas**: busca en Remotive, Adzuna y Jooble (o importa una oferta por enlace, o añádela a mano), quita duplicados y puntúa cada oferta de 0 a 100 diciendo qué cumples y qué te falta.
 4. **Candidaturas**: guarda ofertas, sigue su estado, anota y genera una carta de presentación que luego editas.
@@ -22,7 +22,9 @@ flowchart LR
 
 - No hay cuentas ni base de datos con datos personales. Perfil, ofertas, notas y cartas viven en IndexedDB.
 - El servidor de la IA solo reenvía la petición. No registra ni guarda el contenido.
-- Con clave propia, la clave se guarda solo en tu navegador y las llamadas van directas a tu proveedor sin pasar por el servidor.
+- Con clave propia, la clave se guarda solo en tu navegador, **cifrada con una contraseña tuya** (mínimo 8 caracteres, la misma cripto que la copia en la nube), y las llamadas van directas a tu proveedor sin pasar por el servidor. La contraseña no se guarda: tras recargar hay que desbloquear la clave en Ajustes, y descifrada solo vive en memoria. La dirección de tu proveedor tiene que ser https (http solo en localhost, para Ollama).
+- Quien tenía una clave guardada en claro de una versión anterior la conserva (la migración a la versión 2 de la base no puede cifrarla sin tu contraseña); Ajustes avisa y la cifra al guardar con una contraseña.
+- Ollama necesita permitir el origen de la web (`OLLAMA_ORIGINS`) para aceptar llamadas desde el navegador.
 - La copia en la nube se cifra **en el navegador**: PBKDF2 (600 000 iteraciones) de tu contraseña, HKDF para sacar dos claves independientes (una para AES-GCM y otra para demostrar que eres el dueño de la copia), y el servidor solo guarda el blob cifrado y el hash del token. Tu clave de IA no entra en la copia.
 - **Sin la contraseña no hay recuperación.** Nadie puede restablecerla, y es lo que hace que el servidor no pueda leer nada.
 - Importar por enlace obliga al servidor a descargar páginas ajenas, así que se defiende de SSRF: solo http/https en los puertos 80 y 443, sin credenciales en la URL, la IP **real** a la que conecta (no solo el nombre) tiene que ser pública, cada redirección (máx. 3) se revalida, y hay límite de 8 s y 1 MB y solo se acepta HTML. No se guarda nada: la página se descarga, se extrae la oferta y se devuelve al navegador.

@@ -1,6 +1,7 @@
 import type { Ajustes } from "../tipos.ts";
 import { respuestaDemo } from "./demo.ts";
 import { ErrorIa, type Pregunta, type ProveedorIa } from "./tipos.ts";
+import { errorDeUrl, esLocal } from "./url.ts";
 import type { Mensaje } from "./valida.ts";
 
 const POR_ESTADO: Record<number, ErrorIa["codigo"]> = {
@@ -87,7 +88,10 @@ export class ProveedorApp implements ProveedorIa {
   }
 }
 
-/** La IA de la persona: llamada directa a su proveedor (compatible con OpenAI) con su clave. */
+/**
+ * La IA de la persona: llamada directa a su proveedor (compatible con OpenAI). La clave llega ya
+ * descifrada (`clave`) y solo en memoria; en tu equipo (Ollama) no hace falta.
+ */
 export class ProveedorPropio implements ProveedorIa {
   readonly modo = "propia" as const;
 
@@ -95,8 +99,13 @@ export class ProveedorPropio implements ProveedorIa {
 
   async preguntar(p: Pregunta) {
     const { url, modelo, clave } = this.ajustes;
-    if (!url || !modelo || !clave)
-      throw new ErrorIa("config", "Faltan datos de tu IA: dirección, modelo y clave.");
+    if (!url || !modelo || (!clave && !esLocal(url)))
+      throw new ErrorIa(
+        "config",
+        "Faltan datos de tu IA (dirección, modelo o clave). Si la clave está protegida, desbloquéala en Ajustes.",
+      );
+    const motivo = errorDeUrl(url);
+    if (motivo) throw new ErrorIa("config", motivo);
     const messages = mensajes(p);
     return consultar(
       url,
@@ -122,13 +131,16 @@ export class ProveedorDemo implements ProveedorIa {
   }
 }
 
-/** El proveedor que corresponde a los ajustes de la persona. */
-export function proveedorDe(ajustes: Ajustes): ProveedorIa {
+/**
+ * El proveedor que corresponde a los ajustes de la persona. `clave` es la clave ya descifrada
+ * (de la sesión o recién escrita); si falta se usa la heredada en claro, si la hay.
+ */
+export function proveedorDe(ajustes: Ajustes, clave?: string): ProveedorIa {
   switch (ajustes.modoIa) {
     case "demo":
       return new ProveedorDemo();
     case "propia":
-      return new ProveedorPropio(ajustes);
+      return new ProveedorPropio({ ...ajustes, clave: clave ?? ajustes.clave });
     default:
       return new ProveedorApp();
   }

@@ -1,3 +1,4 @@
+import { ajustesSugeridos } from "./ajustes.ts";
 import type { Almacenamiento } from "./almacen/tipos.ts";
 import type { Oferta } from "./tipos.ts";
 
@@ -68,7 +69,7 @@ export const OFERTAS_DEMO: Oferta[] = [
 /** Carga el perfil, las preferencias y unas ofertas de ejemplo, y pone la IA en modo demo. */
 export async function cargarDemo(almacen: Almacenamiento) {
   await almacen.escribirLote({
-    ajustes: { id: "ajustes", modoIa: "demo" },
+    ajustes: { ...ajustesSugeridos(), modoIa: "demo", configurado: true },
     perfil: {
       id: "perfil",
       skills: ["React", "TypeScript", "Node.js", "CSS", "Testing", "Git"],

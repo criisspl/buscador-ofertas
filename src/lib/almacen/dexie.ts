@@ -1,4 +1,5 @@
 import Dexie, { liveQuery, type EntityTable } from "dexie";
+import { presetDe } from "../ia/presets.ts";
 import type { Ajustes, Candidatura, Encaje, Oferta, Perfil, Preferencias } from "../tipos.ts";
 import type { Almacenamiento, Datos, Lote } from "./tipos.ts";
 
@@ -21,6 +22,22 @@ export class BaseDatos extends Dexie {
       encajes: "ofertaId, nota",
       candidaturas: "ofertaId, estado, actualizada",
     });
+    // v2: ajustes de almacenamiento y proveedor de IA, y asistente de primer uso. Quien ya usa la
+    // app conserva su configuración: sus ajustes se completan y cuentan como ya configurados. Una
+    // clave propia en claro se queda como estaba (cifrarla exige una contraseña que aquí no hay)
+    // y Ajustes pide protegerla; en cuanto se protege, el campo en claro se borra.
+    this.version(2)
+      .stores({})
+      .upgrade((tx) =>
+        tx
+          .table("ajustes")
+          .toCollection()
+          .modify((a: Ajustes) => {
+            a.almacenamiento ??= "dexie";
+            a.proveedorIa ??= presetDe(a.url);
+            a.configurado ??= true;
+          }),
+      );
   }
 }
 
