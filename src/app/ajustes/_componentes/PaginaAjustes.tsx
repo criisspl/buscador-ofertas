@@ -15,6 +15,7 @@ import {
 import { ID_PRESETS, PRESETS } from "@/lib/ia/presets";
 import { probarConexion, type ResultadoPrueba } from "@/lib/ia/prueba";
 import { errorDeUrl, esLocal } from "@/lib/ia/url";
+import { MigrarAlmacen } from "./MigrarAlmacen";
 import type { Ajustes, ProveedorIaId, TipoAlmacenamiento } from "@/lib/tipos";
 
 type Vista = "cargando" | "asistente" | "formulario";
@@ -353,6 +354,8 @@ export function PaginaAjustes() {
           </p>
         )}
       </div>
+
+      <MigrarAlmacen />
     </div>
   );
 }
