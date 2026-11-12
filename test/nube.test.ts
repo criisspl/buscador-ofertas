@@ -139,7 +139,14 @@ describe("subir y bajar", () => {
       idiomas: [],
       textoCv: "",
     });
-    await db.ajustes.put({ id: "ajustes", modoIa: "propia", clave: "sk-no-subir" });
+    await db.ajustes.put({
+      id: "ajustes",
+      almacenamiento: "dexie",
+      proveedorIa: "otro",
+      configurado: true,
+      modoIa: "propia",
+      clave: "sk-no-subir",
+    });
   });
 
   it("la copia no incluye los ajustes ni la clave de IA", async () => {

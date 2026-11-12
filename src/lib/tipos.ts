@@ -1,11 +1,15 @@
 import type { z } from "zod";
 import type {
+  AjustesSchema,
+  AlmacenamientoSchema,
+  BlobSchema,
   CandidaturaSchema,
   EncajeSchema,
   EstadoCandidaturaSchema,
   OfertaSchema,
   PerfilSchema,
   PreferenciasSchema,
+  ProveedorIaSchema,
 } from "./esquemas.ts";
 
 // Tipos del dominio. Todo lo personal vive solo en el navegador (IndexedDB).
@@ -18,11 +22,7 @@ export type Oferta = z.infer<typeof OfertaSchema>;
 export type Encaje = z.infer<typeof EncajeSchema>;
 export type Candidatura = z.infer<typeof CandidaturaSchema>;
 
-export interface Ajustes {
-  id: "ajustes";
-  /** "app" usa la IA de la app; "propia" usa la clave del usuario; "demo" responde con textos de ejemplo, sin red. */
-  modoIa: "app" | "propia" | "demo";
-  url?: string;
-  modelo?: string;
-  clave?: string;
-}
+export type Ajustes = z.infer<typeof AjustesSchema>;
+export type TipoAlmacenamiento = z.infer<typeof AlmacenamientoSchema>;
+export type ProveedorIaId = z.infer<typeof ProveedorIaSchema>;
+export type BlobCifrado = z.infer<typeof BlobSchema>;

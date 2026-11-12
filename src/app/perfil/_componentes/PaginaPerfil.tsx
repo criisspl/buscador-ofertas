@@ -5,9 +5,10 @@ import { useAlmacen } from "@/lib/almacen/contexto";
 import type { Almacenamiento } from "@/lib/almacen/tipos";
 import { ErrorCv, extraerTextoPdf } from "@/lib/cv/texto";
 import { perfilDesdeCv } from "@/lib/cv/perfil";
+import { proveedorActual } from "@/lib/ia/actual";
 import { ErrorIa } from "@/lib/ia/cliente";
 import { useConsulta } from "@/lib/useConsulta.ts";
-import type { Ajustes, Perfil, Preferencias } from "@/lib/tipos";
+import type { Perfil, Preferencias } from "@/lib/tipos";
 
 const PREFS: Preferencias = {
   id: "preferencias",
@@ -55,8 +56,7 @@ export function PaginaPerfil() {
     setCargando(true);
     setError("");
     try {
-      const aj: Ajustes = (await almacen.leerAjustes()) ?? { id: "ajustes", modoIa: "app" };
-      setPerfil(await perfilDesdeCv(textoPendiente, aj));
+      setPerfil(await perfilDesdeCv(textoPendiente, await proveedorActual(almacen)));
       setTextoPendiente(null);
     } catch (e) {
       setError(e instanceof ErrorIa || e instanceof Error ? e.message : "Algo ha fallado.");

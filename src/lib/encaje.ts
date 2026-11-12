@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { extraerJson } from "./cv/perfil.ts";
-import { preguntar, type Pregunta } from "./ia/cliente.ts";
-import type { Ajustes, Encaje, Oferta, Perfil, Preferencias } from "./tipos.ts";
+import type { ProveedorIa } from "./ia/tipos.ts";
+import type { Encaje, Oferta, Perfil, Preferencias } from "./tipos.ts";
 
 const punto = z.string().trim().min(1).max(200);
 
@@ -33,8 +33,7 @@ export async function puntuar(
   oferta: Oferta,
   perfil: Perfil,
   prefs: Preferencias,
-  ajustes: Ajustes,
-  pregunta: (a: Ajustes, p: Pregunta) => Promise<string> = preguntar,
+  ia: ProveedorIa,
 ): Promise<Encaje> {
   const datosPerfil = {
     skills: perfil.skills,
@@ -45,7 +44,7 @@ export async function puntuar(
   const texto = `PERFIL:\n${JSON.stringify(datosPerfil)}\n\nOFERTA:\n"""\n${oferta.titulo} en ${oferta.empresa} (${oferta.ubicacion})\n${oferta.descripcion}\n"""`;
   let ultimoFallo = "";
   for (let intento = 0; intento < 2; intento++) {
-    const respuesta = await pregunta(ajustes, {
+    const respuesta = await ia.preguntar({
       sistema: SISTEMA,
       texto,
       json: true,
@@ -58,7 +57,7 @@ export async function puntuar(
         nota: Math.round(d.nota),
         cumple: d.cumple,
         falta: d.falta,
-        proveedor: ajustes.modoIa,
+        proveedor: ia.modo,
       };
     } catch (e) {
       ultimoFallo = e instanceof Error ? e.message : String(e);

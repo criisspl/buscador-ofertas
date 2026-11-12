@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useAlmacen } from "@/lib/almacen/contexto";
 import type { Almacenamiento } from "@/lib/almacen/tipos";
+import { proveedorActual } from "@/lib/ia/actual";
 import {
   actualizar,
   borrar,
@@ -53,11 +54,8 @@ export function PaginaCandidaturas() {
     setGenerando(o.id);
     setAviso("");
     try {
-      const ajustes = (await almacen.leerAjustes()) ?? {
-        id: "ajustes" as const,
-        modoIa: "app" as const,
-      };
-      await cambia(o.id, { carta: await cartaPara(o, perfil, ajustes) });
+      const ia = await proveedorActual(almacen);
+      await cambia(o.id, { carta: await cartaPara(o, perfil, ia) });
     } catch (e) {
       setAviso(e instanceof Error ? e.message : "No se ha podido escribir la carta.");
     } finally {

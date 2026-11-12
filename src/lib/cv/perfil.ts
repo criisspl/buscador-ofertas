@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { preguntar, type Pregunta } from "../ia/cliente.ts";
-import type { Ajustes, Perfil } from "../tipos.ts";
+import type { ProveedorIa } from "../ia/tipos.ts";
+import type { Perfil } from "../tipos.ts";
 
 /** Texto del CV que se envía a la IA; el resto se descarta. */
 export const MAX_TEXTO_CV = 30_000;
@@ -36,16 +36,12 @@ export function extraerJson(respuesta: string): unknown {
 export class ErrorPerfil extends Error {}
 
 /** Convierte el texto de un CV en un perfil, con la IA de la app o la del usuario. */
-export async function perfilDesdeCv(
-  textoCv: string,
-  ajustes: Ajustes,
-  pregunta: (a: Ajustes, p: Pregunta) => Promise<string> = preguntar,
-): Promise<Perfil> {
+export async function perfilDesdeCv(textoCv: string, ia: ProveedorIa): Promise<Perfil> {
   const cv = textoCv.slice(0, MAX_TEXTO_CV);
   let ultimoFallo = "";
   // Un reintento: los modelos pequeños a veces devuelven JSON roto o con campos de más.
   for (let intento = 0; intento < 2; intento++) {
-    const respuesta = await pregunta(ajustes, {
+    const respuesta = await ia.preguntar({
       sistema: SISTEMA,
       texto: `CV:\n"""\n${cv}\n"""`,
       json: true,

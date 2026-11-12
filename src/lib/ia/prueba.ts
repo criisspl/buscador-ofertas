@@ -1,36 +1,36 @@
 import type { Ajustes } from "../tipos.ts";
-import { ErrorIa, preguntar } from "./cliente.ts";
+import { ErrorIa, type ProveedorIa } from "./tipos.ts";
+import { proveedorDe } from "./proveedores.ts";
+import { errorDeUrl, esLocal } from "./url.ts";
 
 export interface ResultadoPrueba {
   ok: boolean;
   mensaje: string;
 }
 
-const LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/;
-
 /** Comprueba una configuración de IA con una pregunta mínima y explica el fallo en claro. */
 export async function probarConexion(
   ajustes: Ajustes,
-  pregunta: typeof preguntar = preguntar,
+  clave?: string,
+  proveedor: ProveedorIa = proveedorDe(ajustes, clave),
 ): Promise<ResultadoPrueba> {
   if (ajustes.modoIa === "demo")
     return { ok: true, mensaje: "El modo demo no usa red: no hay nada que probar." };
 
   if (ajustes.modoIa === "propia") {
-    if (!ajustes.url || !ajustes.modelo || !ajustes.clave)
-      return { ok: false, mensaje: "Faltan datos de tu IA: dirección, modelo y clave." };
-    let u: URL;
-    try {
-      u = new URL(ajustes.url);
-    } catch {
-      return { ok: false, mensaje: "La dirección no parece una URL." };
-    }
-    if (u.protocol !== "https:" && !(u.protocol === "http:" && LOCAL.test(u.hostname)))
-      return { ok: false, mensaje: "La dirección tiene que ser https (o http solo en tu equipo)." };
+    const tieneClave = !!(clave ?? ajustes.clave) || esLocal(ajustes.url);
+    if (!ajustes.url || !ajustes.modelo || !tieneClave)
+      return {
+        ok: false,
+        mensaje:
+          "Faltan datos de tu IA: dirección, modelo y clave (si está protegida, desbloquéala).",
+      };
+    const motivo = errorDeUrl(ajustes.url);
+    if (motivo) return { ok: false, mensaje: motivo };
   }
 
   try {
-    await pregunta(ajustes, { texto: "Responde solo con la palabra: ok", tarea: undefined });
+    await proveedor.preguntar({ texto: "Responde solo con la palabra: ok" });
     return { ok: true, mensaje: "Funciona: la IA ha respondido." };
   } catch (e) {
     if (!(e instanceof ErrorIa)) throw e;
