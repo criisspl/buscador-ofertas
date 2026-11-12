@@ -1,4 +1,4 @@
-import type { Pregunta } from "./cliente.ts";
+import type { Pregunta } from "./tipos.ts";
 
 // Modo demo: respuestas de ejemplo, sin red ni IA. Sirve para enseñar la app sin claves.
 

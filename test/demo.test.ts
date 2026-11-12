@@ -1,24 +1,26 @@
 import "fake-indexeddb/auto";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "vitest";
-import { cargarDemo, hayDatos, OFERTAS_DEMO } from "../src/lib/demo-datos.ts";
+import { cargarDemo, OFERTAS_DEMO } from "../src/lib/demo-datos.ts";
 import { perfilDesdeCv } from "../src/lib/cv/perfil.ts";
 import { cartaPara } from "../src/lib/candidaturas.ts";
 import { puntuar } from "../src/lib/encaje.ts";
 import { preguntar } from "../src/lib/ia/cliente.ts";
-import { BaseDatos } from "../src/lib/store.ts";
+import { AlmacenDexie, BaseDatos } from "../src/lib/almacen/dexie.ts";
 
 let db: BaseDatos;
+let almacen: AlmacenDexie;
 beforeEach(async () => {
   db = new BaseDatos(`test-${Math.random()}`);
   await db.open();
+  almacen = new AlmacenDexie(db);
 });
 
 describe("modo demo", () => {
   it("carga los datos de ejemplo y activa la IA demo", async () => {
-    assert.equal(await hayDatos(db), false);
-    await cargarDemo(db);
-    assert.equal(await hayDatos(db), true);
+    assert.equal(await almacen.hayDatos(), false);
+    await cargarDemo(almacen);
+    assert.equal(await almacen.hayDatos(), true);
     assert.equal((await db.ajustes.get("ajustes"))?.modoIa, "demo");
     assert.equal(await db.ofertas.count(), OFERTAS_DEMO.length);
   });
@@ -29,7 +31,7 @@ describe("modo demo", () => {
       throw new Error("no debería haber red");
     }) as typeof fetch;
     try {
-      await cargarDemo(db);
+      await cargarDemo(almacen);
       const aj = (await db.ajustes.get("ajustes"))!;
       const perfil = await perfilDesdeCv("cualquier texto", aj);
       assert.ok(perfil.skills.length > 0);
@@ -42,7 +44,7 @@ describe("modo demo", () => {
   });
 
   it("puntúa distinto según lo que pide cada oferta", async () => {
-    await cargarDemo(db);
+    await cargarDemo(almacen);
     const aj = (await db.ajustes.get("ajustes"))!;
     const perfil = (await db.perfil.get("perfil"))!;
     const prefs = (await db.preferencias.get("preferencias"))!;

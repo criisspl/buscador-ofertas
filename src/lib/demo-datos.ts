@@ -1,4 +1,4 @@
-import type { BaseDatos } from "./store.ts";
+import type { Almacenamiento } from "./almacen/tipos.ts";
 import type { Oferta } from "./tipos.ts";
 
 // Datos inventados para enseñar la app sin CV ni claves. Nada de esto es real.
@@ -65,15 +65,11 @@ export const OFERTAS_DEMO: Oferta[] = [
   ),
 ];
 
-export async function hayDatos(db: BaseDatos) {
-  return (await db.perfil.count()) + (await db.candidaturas.count()) > 0;
-}
-
 /** Carga el perfil, las preferencias y unas ofertas de ejemplo, y pone la IA en modo demo. */
-export async function cargarDemo(db: BaseDatos) {
-  await db.transaction("rw", [db.ajustes, db.perfil, db.preferencias, db.ofertas], async () => {
-    await db.ajustes.put({ id: "ajustes", modoIa: "demo" });
-    await db.perfil.put({
+export async function cargarDemo(almacen: Almacenamiento) {
+  await almacen.escribirLote({
+    ajustes: { id: "ajustes", modoIa: "demo" },
+    perfil: {
       id: "perfil",
       skills: ["React", "TypeScript", "Node.js", "CSS", "Testing", "Git"],
       experiencia: [
@@ -86,14 +82,14 @@ export async function cargarDemo(db: BaseDatos) {
       ],
       idiomas: ["Español nativo", "Inglés B2"],
       textoCv: "CV de ejemplo (modo demo).",
-    });
-    await db.preferencias.put({
+    },
+    preferencias: {
       id: "preferencias",
       puestos: ["Frontend", "React"],
       ubicacion: "Madrid",
       remoto: true,
       sectoresEvitar: [],
-    });
-    await db.ofertas.bulkPut(OFERTAS_DEMO);
+    },
+    ofertas: OFERTAS_DEMO,
   });
 }

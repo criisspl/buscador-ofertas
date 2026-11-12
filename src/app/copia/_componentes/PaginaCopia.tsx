@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useAlmacen } from "@/lib/almacen/contexto";
 import { bajar, borrarCopia, subir } from "@/lib/nube/cliente";
 import { marcarCopia } from "@/lib/recordatorio";
-import { db } from "@/lib/store";
 
 const MIN_PASSWORD = 10;
 
 export function PaginaCopia() {
+  const almacen = useAlmacen();
   const [alias, setAlias] = useState("");
   const [password, setPassword] = useState("");
   const [trabajando, setTrabajando] = useState(false);
@@ -65,7 +66,7 @@ export function PaginaCopia() {
             disabled={trabajando || !listo || password.length < MIN_PASSWORD}
             onClick={() =>
               ejecuta(async () => {
-                const cuando = await subir(db, alias, password);
+                const cuando = await subir(almacen, alias, password);
                 marcarCopia(localStorage);
                 return `Copia guardada (${hora(cuando)}).`;
               })
@@ -79,7 +80,7 @@ export function PaginaCopia() {
             onClick={() =>
               ejecuta(
                 async () =>
-                  `Datos recuperados (copia del ${hora(await bajar(db, alias, password))}).`,
+                  `Datos recuperados (copia del ${hora(await bajar(almacen, alias, password))}).`,
               )
             }
           >

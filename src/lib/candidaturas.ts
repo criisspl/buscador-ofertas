@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { CandidaturaSchema, OfertaSchema } from "./esquemas.ts";
 import { preguntar, type Pregunta } from "./ia/cliente.ts";
-import type { BaseDatos } from "./store.ts";
+import type { Almacenamiento } from "./almacen/tipos.ts";
 import type { Ajustes, Candidatura, Encaje, EstadoCandidatura, Oferta, Perfil } from "./tipos.ts";
 
 export const ESTADOS: { id: EstadoCandidatura; etiqueta: string }[] = [
@@ -65,9 +65,9 @@ export function nombreCarta(empresa?: string): string {
 }
 
 /** Guarda una oferta para seguirla. Si ya estaba, no pisa su estado ni sus notas. */
-export async function guardar(db: BaseDatos, ofertaId: string, ahora = Date.now()) {
-  if (await db.candidaturas.get(ofertaId)) return;
-  await db.candidaturas.put({
+export async function guardar(almacen: Almacenamiento, ofertaId: string, ahora = Date.now()) {
+  if (await almacen.obtenerCandidatura(ofertaId)) return;
+  await almacen.guardarCandidatura({
     ofertaId,
     estado: "guardada",
     carta: "",
@@ -78,17 +78,17 @@ export async function guardar(db: BaseDatos, ofertaId: string, ahora = Date.now(
 }
 
 export async function actualizar(
-  db: BaseDatos,
+  almacen: Almacenamiento,
   ofertaId: string,
   cambios: Partial<Pick<Candidatura, "estado" | "notas" | "carta">>,
   ahora = Date.now(),
 ) {
-  await db.candidaturas.update(ofertaId, { ...cambios, actualizada: ahora });
+  await almacen.actualizarCandidatura(ofertaId, { ...cambios, actualizada: ahora });
 }
 
 /** Quita la candidatura de la lista. La oferta y su encaje se conservan por si se vuelve a guardar. */
-export async function borrar(db: BaseDatos, ofertaId: string) {
-  await db.candidaturas.delete(ofertaId);
+export async function borrar(almacen: Almacenamiento, ofertaId: string) {
+  await almacen.borrarCandidatura(ofertaId);
 }
 
 const CopiaSchema = z.object({
@@ -98,26 +98,23 @@ const CopiaSchema = z.object({
 });
 
 /** Copia de seguridad en JSON de tus candidaturas y de las ofertas a las que se refieren. */
-export async function exportar(db: BaseDatos): Promise<string> {
-  const candidaturas = await db.candidaturas.toArray();
-  const ofertas = (await db.ofertas.bulkGet(candidaturas.map((c) => c.ofertaId))).filter(
+export async function exportar(almacen: Almacenamiento): Promise<string> {
+  const candidaturas = await almacen.listarCandidaturas();
+  const ofertas = (await almacen.obtenerOfertas(candidaturas.map((c) => c.ofertaId))).filter(
     (o): o is Oferta => !!o,
   );
   return JSON.stringify({ version: 1, ofertas, candidaturas }, null, 2);
 }
 
 /** Importa una copia. Todo o nada: si algo no cuadra no se toca nada. Devuelve cuántas candidaturas entran. */
-export async function importar(db: BaseDatos, texto: string): Promise<number> {
+export async function importar(almacen: Almacenamiento, texto: string): Promise<number> {
   let copia;
   try {
     copia = CopiaSchema.parse(JSON.parse(texto));
   } catch {
     throw new Error("Este archivo no es una copia válida de candidaturas.");
   }
-  await db.transaction("rw", db.ofertas, db.candidaturas, async () => {
-    await db.ofertas.bulkPut(copia.ofertas);
-    await db.candidaturas.bulkPut(copia.candidaturas);
-  });
+  await almacen.escribirLote({ ofertas: copia.ofertas, candidaturas: copia.candidaturas });
   return copia.candidaturas.length;
 }
 
