@@ -5,6 +5,7 @@ Sube tu CV, cuéntale qué buscas y la IA puntúa las ofertas de trabajo según 
 ## Qué hace
 
 1. **Ajustes**: la primera vez, un asistente propone la configuración sugerida (datos en este navegador con IndexedDB e IA de la app) o te deja personalizarla. Puedes usar la IA de la app (Groq, con Mistral de reserva) o tu propia IA: Groq, Mistral, OpenAI, Ollama en tu equipo u otra API compatible con OpenAI, con la dirección y el modelo editables. Un botón «Probar conexión» comprueba que funciona y explica el fallo (clave, cupo, modelo, CORS).
+   En Ajustes, «Cambiar de almacenamiento / copiar a otro» copia tus datos (perfil, ofertas, encajes y candidaturas) a otro almacenamiento: valida lo leído, pide confirmación y te da una copia previa si el destino ya tenía datos, verifica lo escrito y deja siempre intacto el origen. La clave de IA y los ajustes no viajan. Hoy solo existe el almacenamiento en el navegador, así que no hay destino al que copiar; mientras tanto se puede descargar una copia en JSON. Un adaptador nuevo implementa `Almacenamiento` y se añade a `DESTINOS_MIGRACION` (`src/lib/almacen/opciones.ts`).
 2. **Perfil**: subes tu CV en PDF. El texto se extrae en el navegador, y solo se envía a la IA después de que aceptes. Revisas y corriges el perfil resultante y fijas tus preferencias (puestos, ubicación, remoto, sectores a evitar).
 3. **Ofertas**: busca en Remotive, Adzuna y Jooble (o importa una oferta por enlace, o añádela a mano), quita duplicados y puntúa cada oferta de 0 a 100 diciendo qué cumples y qué te falta.
 4. **Candidaturas**: guarda ofertas, sigue su estado, anota y genera una carta de presentación que luego editas.
@@ -85,6 +86,7 @@ Se prueba con respuestas simuladas, no contra los servicios reales:
 - La calidad de las notas y de las cartas con un modelo real.
 - Upstash (límites y copias).
 - PDFs de CV reales y variados: se probó con uno sencillo.
+- La migración entre almacenamientos se prueba con un adaptador en memoria (solo en tests): aún no hay un segundo adaptador real, así que el flujo de copiar con progreso, cancelación y confirmación de la pantalla de Ajustes no se ha visto en un navegador.
 
 ## Pendiente
 

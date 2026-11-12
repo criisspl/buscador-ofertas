@@ -187,3 +187,20 @@ test("probar conexión con clave propia explica si funciona o por qué falla", a
   await page.getByRole("button", { name: "Probar conexión" }).click();
   await expect(page.getByText("Funciona: la IA ha respondido.")).toBeVisible();
 });
+
+test("copiar a otro almacenamiento: hoy no hay destino, pero se puede descargar una copia sin la clave", async ({
+  page,
+}) => {
+  await page.goto("/ajustes");
+  await page.getByRole("button", { name: "Usar la configuración sugerida" }).click();
+  await expect(page.getByRole("heading", { name: /Cambiar de almacenamiento/ })).toBeVisible();
+  await expect(page.getByText(/no hay a dónde copiar/)).toBeVisible();
+
+  const descarga = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Descargar copia (JSON)" }).click();
+  const fichero = await descarga;
+  expect(fichero.suggestedFilename()).toBe("buscador-ofertas-copia.json");
+  const texto = await (await import("node:fs/promises")).readFile((await fichero.path())!, "utf8");
+  expect(JSON.parse(texto)).toMatchObject({ version: 1, ofertas: [], candidaturas: [] });
+  expect(texto).not.toContain("clave");
+});
