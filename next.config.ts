@@ -19,6 +19,8 @@ const csp = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Id del build para versionar la caché del service worker (src/app/sw.js/route.ts).
+  env: { BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA ?? String(Date.now()) },
   async headers() {
     return [
       {
